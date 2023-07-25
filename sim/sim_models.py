@@ -18,11 +18,16 @@ class ENParams(NamedTuple):
 class ENSimulationRawResults(NamedTuple):
     consensus_round: Optional[int]
     research_abandoned_round: Optional[int]
-    final_sim_round: int
-
+    stable_pol_round: Optional[int]
+    
 class ENResultsSummary(NamedTuple):
-    scientist_proportion_consensus_reached: str
-    scientists_avg_consensus_round: str
+    sims_proportion_consensus_reached: str
+    sims_avg_consensus_round: str
+    sims_proportion_polarization: str
+    sims_avg_polarization_round: str
+    sims_proportion_research_abandoned: str
+    sims_avg_research_abandonment_round: str
+    
 
 class ENSimsSummary(NamedTuple):
     params: ENParams

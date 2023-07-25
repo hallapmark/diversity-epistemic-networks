@@ -1,5 +1,5 @@
 from sim.simsetup import *
-#from multiprocessing import freeze_support
+from multiprocessing import freeze_support
 
 def main():
     sim_type = ENSimType.POLARIZATION_COMPLETE
@@ -10,6 +10,6 @@ def main():
     simsetup.quick_setup()
 
 if __name__ == "__main__":
-    #freeze_support() 
+    freeze_support()
     # https://docs.python-guide.org/shipping/freezing/
     main()

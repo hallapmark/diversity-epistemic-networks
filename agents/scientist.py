@@ -12,17 +12,22 @@ class Scientist(JeffreyUpdater, CredenceBasedSupervisor, BinomialExperimenter):
                  rng: np.random.Generator, 
                  n_per_round: int, 
                  epsilon: float, 
-                 stop_threshold: float, 
+                 low_stop: float,
                  prior: float,
                  m: float):
         super().__init__(epsilon = epsilon,
-                         stop_threshold = stop_threshold,
+                         m = m,
                          prior = prior,
-                         m = m)
+                         low_stop = low_stop)
         self.n_per_round = n_per_round
         self.binomial_experiment_gen = ExperimentGen(rng)
         self.round_binomial_experiment: Optional[BinomialExperiment] = None
     
+    def __str__(self):
+        k = self.round_binomial_experiment.k if self.round_binomial_experiment else 'N/A'
+        n = self.round_binomial_experiment.n if self.round_binomial_experiment else 'N/A'
+        return f"credence = {round(self.credence, 2)}, k = {k}, n = {n}"
+
     # BinomialExperimenter implementation
     def get_experiment_data(self) -> Optional[BinomialExperiment]:
         return self.round_binomial_experiment
@@ -30,14 +35,9 @@ class Scientist(JeffreyUpdater, CredenceBasedSupervisor, BinomialExperimenter):
     # CredenceBasedSupervisor mandatory method implementations
     def _stop_action(self):
         self.round_binomial_experiment = None
-        self._finally()
     
     def _continue_action(self):
         self._experiment(self.n_per_round, self.epsilon)
-        self._finally()
-        
-    def _finally(self):
-        self.jeffrey_update_credence()
         
     def _experiment(self, n: int, epsilon):
         self.round_binomial_experiment = self.binomial_experiment_gen.experiment(n, epsilon)

@@ -34,11 +34,11 @@ class ENSimSetup():
             case ENSimType.ZOLLMAN_CYCLE:
                 configs = [ENParams(pop, ENetworkType.CYCLE, 1000, 0.001, 0.5, 10000, 0.99, 0) for pop in range(4, 6)]
                 self.setup_sims(configs, "zollman2007.csv")
-            case ENSimType.POLARIZATION_COMPLETE: # O'connor & Weatherall 2018   pop = 4; 6; 10; 20; 50 – but we are skipping 50 for sure
-                configs = [ENParams(pop, ENetworkType.COMPLETE, n, e, 0.5, 1000, 0.99, m) for pop in (2, 6) #2, 6, 10, 20)
-                                                                                                for e in (0.001, 0.002) #0.005, 0.1, 0.15, 0.2
-                                                                                                for m in (1, ) # 1, 1.1, 1.5, 2, 2.5)]
-                                                                                                for n in (1, 5)]# 1, 5, 10, 20, 50, 100
+            case ENSimType.POLARIZATION_COMPLETE: # O'connor & Weatherall 2018   pop = 4; 6; 10; 20
+                configs = [ENParams(pop, ENetworkType.COMPLETE, n, e, 0.5, 10000, 0.99, m) for pop in (2, 6, 10, 20) #2, 6, 10, 20)
+                                                                                                for e in (.2,) #0.005, 0.1, 0.15, 0.2
+                                                                                                for m in (1, 1.1, 1.5, 2, 2.5) # 1, 1.1, 1.5, 2, 2.5)]
+                                                                                                for n in (50,)]# 1, 5, 10, 20, 50, 100
                 self.setup_sims(configs, "oconnor2018.csv")
             
 
@@ -69,18 +69,35 @@ class ENSimSetup():
         pool.close()
         pool.join()
         if None in results_from_sims:
-            raise ValueError("Failed to get results from at least one simulation.")
+            raise Warning("Failed to get results from at least one simulation.")
         results = [r for r in results_from_sims if r is not None]
-        cons_count = self.consensus_count(results)
-        proportion_consensus_reached = round(cons_count / len(results), 3)
-        if cons_count > 0:
-            # TODO: Add try statement?
-            avg_c_r = np.mean([res.consensus_round for res in results if res.consensus_round])
-            avg_consensus_round = round(float(avg_c_r), 3)
-        else:
-            avg_consensus_round = "N/A"
-        sims_summary = ENResultsSummary(str(proportion_consensus_reached), str(avg_consensus_round))
+        sims_summary = self.process_sims_results(results)
         return ENSimsSummary(params, sims_summary)
+    
+    def process_sims_results(self, results: list[ENSimulationRawResults]) -> ENResultsSummary:
+        cons_sims = [res for res in results if res.consensus_round]
+        polarized_sims = [res for res in results if res.stable_pol_round]
+        abandon_sims = [res for res in results if res.research_abandoned_round]
+        cons_count = len(cons_sims)
+        polarized_count = len(polarized_sims)
+        abandoned_count = len(abandon_sims)
+        prop_cons = str(round(cons_count / len(results), 3))
+        prop_pol = str(round(polarized_count / len(results), 3))
+        prop_aband = str(round(abandoned_count / len(results), 3))
+        av_c_r = av_p_r = av_a_r = "N/A"
+        if cons_sims:
+            av_c_r = np.mean([res.consensus_round for res in cons_sims if res.consensus_round])
+            av_c_r = str(round(float(av_c_r), 3))
+        if polarized_sims:
+            av_p_r = np.mean(
+                [res.stable_pol_round for res in polarized_sims if res.stable_pol_round])
+            av_p_r = str(round(float(av_p_r), 3))
+        if abandon_sims:
+            av_a_r = np.mean(
+                [res.research_abandoned_round for res in abandon_sims if res.research_abandoned_round])
+            av_a_r = str(round(float(av_a_r), 3))
+        return ENResultsSummary(prop_cons, av_c_r, prop_pol, av_p_r, prop_aband, av_a_r)
+
 
     def run_sim(self,
                 rng: np.random.Generator,
@@ -88,32 +105,23 @@ class ENSimSetup():
                 network_type: ENetworkType, 
                 n_per_round: int, 
                 epsilon: float, 
-                scientist_stop_threshold: float,
+                low_stop: float,
                 max_research_rounds: int,
                 consensus_threshold: float,
-                m):
+                m: float):
         network = ENetwork(rng,
-                                              scientist_pop_count,
-                                              network_type,
-                                              n_per_round,
-                                              epsilon,
-                                              scientist_stop_threshold,
-                                              m)
+                           scientist_pop_count,
+                           network_type,
+                           n_per_round,
+                           epsilon,
+                           low_stop,
+                           m)
         simulation = EpistemicNetworkSimulation(network, 
                                                 max_research_rounds, 
-                                                scientist_stop_threshold, 
+                                                low_stop,
                                                 consensus_threshold)
         simulation.run_sim()
         return simulation.results
-
-    def consensus_count(self, results: List[ENSimulationRawResults]) -> int:
-        total = 0
-        for sim_result in results:
-            if not sim_result:
-                continue
-            if sim_result.consensus_round:
-                total += 1
-        return total
 
     def record_sim(self, results: ENResultsCSVWritableSummary, path: str):
         file_exists = os.path.isfile(path)

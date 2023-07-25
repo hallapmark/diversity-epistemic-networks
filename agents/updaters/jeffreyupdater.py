@@ -25,6 +25,10 @@ class JeffreyUpdater(DoxasticAgent):
         for influencer in self.jeffrey_influencers:
             self._jeffrey_update_credence_on_influencer(influencer)
 
+    def dm(self, influencer: BinomialExperimenter) -> float:
+        d = abs(self.credence - influencer.credence)
+        return d * self.m
+
     # Private methods
     def _jeffrey_update_credence_on_influencer(self, influencer: BinomialExperimenter): 
         exp = influencer.get_experiment_data()
@@ -35,20 +39,18 @@ class JeffreyUpdater(DoxasticAgent):
             p_E_H = self._truncated_likelihood(k, n, p)
             p_E_nH = self.truncated_p_E_nH(k, n, p)
             p_E = self._marginal_likelihood(self.credence, p_E_H, p_E_nH)
-
             p_H_E = self.credence * p_E_H / p_E
             p_H_nE = self.credence * (1 - p_E_H) / (1 - p_E)
-
-            d = abs(self.credence - influencer.get_credence())
+            dm = self.dm(influencer)
             # No anti-updating, simply ignore evidence past certain point
-            posterior_p_E = 1 - min(1, d * self.m) * (1 - p_E) 
-            
+            posterior_p_E = 1 - min(1, dm) * (1 - p_E)
             self.credence = self._jeffrey_calculate_posterior(self.credence, p_H_E, posterior_p_E, p_H_nE)
 
     def _jeffrey_calculate_posterior(self, 
                                      prior: float, 
                                      p_H_E: float, 
-                                     posterior_p_E, p_H_nE: float) -> float:
+                                     posterior_p_E,
+                                     p_H_nE: float) -> float:
         """ TIt is assumed that there 
         are only two possible parameter values (two possible worlds): p and 1-p. This parameter gives
         the probability of a "success" event occurring on a given try. """

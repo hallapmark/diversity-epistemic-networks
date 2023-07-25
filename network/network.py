@@ -1,5 +1,4 @@
 from agents.scientist import Scientist
-from agents.experimenters.binomialexperimenter import BinomialExperimenter
 from agents.updaters.jeffreyupdater import JeffreyUpdater
 from sim.sim_models import *
 import numpy as np
@@ -12,7 +11,7 @@ class ENetwork():
                  scientist_network_type: ENetworkType,
                  n_per_round: int,
                  epsilon: float,
-                 scientist_stop_threshold: float,
+                 low_stop: float,
                  m: float):
         self.scientist_popcount = scientist_popcount
         self.scientist_network_type = scientist_network_type
@@ -20,10 +19,9 @@ class ENetwork():
             rng,
             n_per_round,
             epsilon,
-            scientist_stop_threshold,
-            rng.uniform(0.001),
+            low_stop,
+            rng.uniform(0.001), # Excluding 0 and 1 (uniform auto-excludes 1). Cf. sep-sen
             m
-            # Excluding 0 and 1 (uniform auto-excludes 1)
             ) for _ in range(scientist_popcount)]
         self._structure_scientific_network(self.scientists, scientist_network_type)
 
@@ -45,7 +43,12 @@ class ENetwork():
     ## Interface
     def enetwork_play_round(self):
         for scientist in self.scientists:
+            # Whether 'tis nobler to experiment
             scientist.decide_round_research_action()
+        for scientist in self.scientists:
+            scientist.jeffrey_update_credence()
+        for scientist in self.scientists:
+            scientist.round_binomial_experiment = None
         
     ## Private methods
     def _add_all_influencers_for_updater(self,
