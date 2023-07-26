@@ -26,7 +26,7 @@ class Scientist(JeffreyUpdater, CredenceBasedSupervisor, BinomialExperimenter):
     def __str__(self):
         k = self.round_binomial_experiment.k if self.round_binomial_experiment else 'N/A'
         n = self.round_binomial_experiment.n if self.round_binomial_experiment else 'N/A'
-        return f"credence = {round(self.credence, 2)}, k = {k}, n = {n}"
+        return f"credence = {round(self.credence, 3)}, k = {k}, n = {n}"
 
     # BinomialExperimenter implementation
     def get_experiment_data(self) -> Optional[BinomialExperiment]:

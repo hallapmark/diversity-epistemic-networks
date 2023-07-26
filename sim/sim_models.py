@@ -1,19 +1,22 @@
-from typing import Optional, NamedTuple,  List
+from typing import Optional, NamedTuple, List
 from enum import Enum, auto
+
+from sim.priors_func import *
 
 class ENetworkType(Enum):
    COMPLETE = auto()
    CYCLE = auto()
 
 class ENParams(NamedTuple):
-    scientist_pop_count: int 
+    scientist_popcount: int
     network_type: ENetworkType
-    binom_n_per_round: int
+    n_per_round: int
     epsilon: float
-    scientist_stop_threshold: float
-    max_research_rounds_allowed: int
+    low_stop: float # The threshold at which the informative action will no longer be taken
+    max_research_rounds: int
     consensus_threshold: float
     m: float
+    priors_func: Priors_Func = uniform_priors
 
 class ENSimulationRawResults(NamedTuple):
     consensus_round: Optional[int]

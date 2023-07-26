@@ -1,7 +1,7 @@
 import numpy as np
 import timeit
 from multiprocessing import Pool
-from network.network import ENetwork, ENetworkType
+from network.network import *
 from sim.sim import *
 from sim.sim_models import *
 from typing import Optional, List
@@ -64,6 +64,10 @@ class ENSimSetup():
         if not rng_streams:
             raise ValueError("There needs to be at least one rng.")
         pool = Pool()
+        # Commented code is for testing a single run with breakpoints
+        # results_from_sims = self.run_sim(rng_streams[0], params.scientist_popcount, params.network_type,
+        #                                  params.n_per_round, params.epsilon, params.low_stop, params.max_research_rounds,
+        #                                  params.consensus_threshold, params.m, params.priors_func)
         results_from_sims = pool.starmap(self.run_sim,
                                         [(rng,) + params for rng in rng_streams])
         pool.close()
@@ -98,24 +102,25 @@ class ENSimSetup():
             av_a_r = str(round(float(av_a_r), 3))
         return ENResultsSummary(prop_cons, av_c_r, prop_pol, av_p_r, prop_aband, av_a_r)
 
-
     def run_sim(self,
                 rng: np.random.Generator,
-                scientist_pop_count: int, 
+                scientist_popcount: int,
                 network_type: ENetworkType, 
                 n_per_round: int, 
                 epsilon: float, 
                 low_stop: float,
                 max_research_rounds: int,
                 consensus_threshold: float,
-                m: float):
+                m: float,
+                priors_func: Priors_Func) -> Optional[ENSimulationRawResults]:
         network = ENetwork(rng,
-                           scientist_pop_count,
+                           scientist_popcount,
                            network_type,
                            n_per_round,
                            epsilon,
                            low_stop,
-                           m)
+                           m,
+                           priors_func)
         simulation = EpistemicNetworkSimulation(network, 
                                                 max_research_rounds, 
                                                 low_stop,
@@ -145,8 +150,16 @@ class ENSimSetup():
         headers.extend(summary_fields)
 
         sim_data = [str(sim_count)]
-        sim_data.extend([str(param_val) for param_val in sims_summary.params])
-        sim_data.append(str(time_elapsed))
+        parameter_vals: list[str] = []
+        for parameter_val in sims_summary.params:
+            try:
+                # Get a *function* name e.g. the name of the priors func used
+                parameter_vals.append(parameter_val.__name__)  # type: ignore
+            except AttributeError:
+                # Get the value of any other parameter
+                parameter_vals.append(str(parameter_val))
+        sim_data.extend(parameter_vals)
+        sim_data.append(str(round(time_elapsed, 1)))
         result_str_list = [r for r in sims_summary.results_summary]
         print(f'Summary fields: {summary_fields}')
         print(f'Results from config: {result_str_list}')

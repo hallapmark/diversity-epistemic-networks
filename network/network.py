@@ -12,17 +12,19 @@ class ENetwork():
                  n_per_round: int,
                  epsilon: float,
                  low_stop: float,
-                 m: float):
+                 m: float,
+                 priors_func: Priors_Func):
         self.scientist_popcount = scientist_popcount
         self.scientist_network_type = scientist_network_type
+        priors = priors_func(scientist_popcount, rng)
         self.scientists = [Scientist(
             rng,
             n_per_round,
             epsilon,
             low_stop,
-            rng.uniform(0.001), # Excluding 0 and 1 (uniform auto-excludes 1). Cf. sep-sen
+            prior,
             m
-            ) for _ in range(scientist_popcount)]
+            ) for prior in priors]
         self._structure_scientific_network(self.scientists, scientist_network_type)
 
     ## Init helpers
