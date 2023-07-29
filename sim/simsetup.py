@@ -12,7 +12,8 @@ import csv
 class ENSimType(Enum):
     ZOLLMAN_COMPLETE = auto()
     ZOLLMAN_CYCLE = auto()
-    POLARIZATION_COMPLETE = auto()
+    POLARIZATION = auto()
+    UNSTABLE = auto()
 
 class ENSimSetup():
     def __init__(self,
@@ -29,16 +30,17 @@ class ENSimSetup():
         match self.sim_type:
             # A partial reproduction of the results of Zollman https://philpapers.org/rec/ZOLTCS
             case ENSimType.ZOLLMAN_COMPLETE:
-                configs = [ENParams(pop, ENetworkType.COMPLETE, 1000, 0.001, 0.5, 10000, 0.99, 0) for pop in range(4, 6)]
+                configs = [ENParams(pop, ENetworkType.COMPLETE, 1000, 0.001, 0.5, 3000, 0.99, 0) for pop in range(4, 12)]
                 self.setup_sims(configs, "zollman2007.csv")
             case ENSimType.ZOLLMAN_CYCLE:
-                configs = [ENParams(pop, ENetworkType.CYCLE, 1000, 0.001, 0.5, 10000, 0.99, 0) for pop in range(4, 6)]
+                configs = [ENParams(pop, ENetworkType.CYCLE, 1000, 0.001, 0.5, 3000, 0.99, 0) for pop in range(4, 12)]
                 self.setup_sims(configs, "zollman2007.csv")
-            case ENSimType.POLARIZATION_COMPLETE: # O'connor & Weatherall 2018   pop = 4; 6; 10; 20
-                configs = [ENParams(pop, ENetworkType.COMPLETE, n, e, 0.5, 10000, 0.99, m) for pop in (2, 6, 10, 20) #2, 6, 10, 20)
-                                                                                                for e in (.2,) #0.005, 0.1, 0.15, 0.2
-                                                                                                for m in (1, 1.1, 1.5, 2, 2.5) # 1, 1.1, 1.5, 2, 2.5)]
-                                                                                                for n in (50,)]# 1, 5, 10, 20, 50, 100
+            # A reproduction of O'Connor & Weatherall 2018, https://philpapers.org/rec/OCOSP
+            case ENSimType.POLARIZATION: 
+                configs = [ENParams(pop, ENetworkType.COMPLETE, n, e, 0.5, 10000, 0.99, m) for pop in (6, 10, 20) # 2, 6, 10, 20
+                                                                                                for e in (0.2,) # 0.01, 0.05, 0.1, 0.15, 0.2
+                                                                                                for m in np.arange(1.0, 3.1, 0.1).tolist() 
+                                                                                                for n in (50,)] # 1, 5, 10, 20, 50, 100
                 self.setup_sims(configs, "oconnor2018.csv")
             
 
@@ -67,7 +69,7 @@ class ENSimSetup():
         # Commented code is for testing a single run with breakpoints
         # results_from_sims = self.run_sim(rng_streams[0], params.scientist_popcount, params.network_type,
         #                                  params.n_per_round, params.epsilon, params.low_stop, params.max_research_rounds,
-        #                                  params.consensus_threshold, params.m, params.priors_func)
+        #                                  params.confidence_threshold, params.m, params.priors_func, params.priorsetup)
         results_from_sims = pool.starmap(self.run_sim,
                                         [(rng,) + params for rng in rng_streams])
         pool.close()
@@ -82,9 +84,11 @@ class ENSimSetup():
         cons_sims = [res for res in results if res.consensus_round]
         polarized_sims = [res for res in results if res.stable_pol_round]
         abandon_sims = [res for res in results if res.research_abandoned_round]
+        unstable_sims = [res for res in results if res.unstable_conclusion_round]
         cons_count = len(cons_sims)
         polarized_count = len(polarized_sims)
         abandoned_count = len(abandon_sims)
+        unstable_count = len(unstable_sims)
         prop_cons = str(round(cons_count / len(results), 3))
         prop_pol = str(round(polarized_count / len(results), 3))
         prop_aband = str(round(abandoned_count / len(results), 3))
@@ -100,7 +104,9 @@ class ENSimSetup():
             av_a_r = np.mean(
                 [res.research_abandoned_round for res in abandon_sims if res.research_abandoned_round])
             av_a_r = str(round(float(av_a_r), 3))
-        return ENResultsSummary(prop_cons, av_c_r, prop_pol, av_p_r, prop_aband, av_a_r)
+        av_prop_confident_in_true_view = round(float(np.mean([res.prop_agents_confident_in_true_view for res in results])), 3)
+        return ENResultsSummary(
+            prop_cons, av_c_r, prop_pol, av_p_r, prop_aband, av_a_r, str(unstable_count), str(av_prop_confident_in_true_view))
 
     def run_sim(self,
                 rng: np.random.Generator,
@@ -110,9 +116,10 @@ class ENSimSetup():
                 epsilon: float, 
                 low_stop: float,
                 max_research_rounds: int,
-                consensus_threshold: float,
+                confidence_threshold: float,
                 m: float,
-                priors_func: Priors_Func) -> Optional[ENSimulationRawResults]:
+                priors_func: Priors_Func,
+                priorsetup: PriorSetup) -> Optional[ENSimulationRawResults]:
         network = ENetwork(rng,
                            scientist_popcount,
                            network_type,
@@ -120,11 +127,12 @@ class ENSimSetup():
                            epsilon,
                            low_stop,
                            m,
-                           priors_func)
+                           priors_func,
+                           priorsetup)
         simulation = EpistemicNetworkSimulation(network, 
                                                 max_research_rounds, 
                                                 low_stop,
-                                                consensus_threshold)
+                                                confidence_threshold)
         simulation.run_sim()
         return simulation.results
 

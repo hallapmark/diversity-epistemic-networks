@@ -11,17 +11,22 @@ class ENParams(NamedTuple):
     scientist_popcount: int
     network_type: ENetworkType
     n_per_round: int
-    epsilon: float
+    epsilon: float # How much better theory B is. pB = 0.5 + epsilon
     low_stop: float # The threshold at which the informative action will no longer be taken
-    max_research_rounds: int
-    consensus_threshold: float
+    max_research_rounds: int # When we terminate the simulation, if it has not already stopped
+    # For simulations where we presume a stable outcome, what level of confidence is required
+    stable_confidence_threshold: Optional[float]
     m: float
     priors_func: Priors_Func = uniform_priors
+    priorsetup: PriorSetup = PriorSetup()
 
 class ENSimulationRawResults(NamedTuple):
     consensus_round: Optional[int]
     research_abandoned_round: Optional[int]
     stable_pol_round: Optional[int]
+    # Final round for an unstable network (where we left off, manual max rounds threshold reached)
+    unstable_conclusion_round: Optional[int]
+    prop_agents_confident_in_true_view: float
     
 class ENResultsSummary(NamedTuple):
     sims_proportion_consensus_reached: str
@@ -30,8 +35,9 @@ class ENResultsSummary(NamedTuple):
     sims_avg_polarization_round: str
     sims_proportion_research_abandoned: str
     sims_avg_research_abandonment_round: str
+    sims_unstable_count: str
+    av_prop_agents_confident_in_true_view: str
     
-
 class ENSimsSummary(NamedTuple):
     params: ENParams
     results_summary: ENResultsSummary

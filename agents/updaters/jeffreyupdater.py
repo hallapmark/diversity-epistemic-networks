@@ -9,6 +9,7 @@ from agents.experimenters.binomialexperimenter import BinomialExperimenter
 
 """ A Jeffrey updater who knows how to update on binomial distributions."""
 class JeffreyUpdater(DoxasticAgent):
+    # If m == 0, this is the same as a Bayesian updater
     def __init__(self, epsilon: float, m: float, **kw):
         super().__init__(**kw)
         self.epsilon = epsilon # How much better theory B is. p = 0.5 + epsilon

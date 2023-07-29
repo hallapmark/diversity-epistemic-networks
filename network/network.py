@@ -1,3 +1,4 @@
+import random
 from agents.scientist import Scientist
 from agents.updaters.jeffreyupdater import JeffreyUpdater
 from sim.sim_models import *
@@ -13,10 +14,16 @@ class ENetwork():
                  epsilon: float,
                  low_stop: float,
                  m: float,
-                 priors_func: Priors_Func):
+                 priors_func: Priors_Func,
+                 priorsetup: PriorSetup):
         self.scientist_popcount = scientist_popcount
         self.scientist_network_type = scientist_network_type
-        priors = priors_func(scientist_popcount, rng)
+        priors = priors_func(scientist_popcount, rng, priorsetup)
+        self.rng = rng
+        self.n_per_round = n_per_round
+        self.epsilon = epsilon
+        self.low_stop = low_stop
+        self.m = m
         self.scientists = [Scientist(
             rng,
             n_per_round,
@@ -25,6 +32,10 @@ class ENetwork():
             prior,
             m
             ) for prior in priors]
+        if not len(self.scientists) == scientist_popcount:
+            raise ValueError(
+                "Something went wrong. !(len(self.scientists) == scientist_popcount)")
+        self.retired: list[Scientist] = []
         self._structure_scientific_network(self.scientists, scientist_network_type)
 
     ## Init helpers
@@ -43,7 +54,13 @@ class ENetwork():
                 raise NotImplementedError
 
     ## Interface
-    def enetwork_play_round(self):
+    def enetwork_play_round(self, diversity_sim: bool = False):
+        #if diversity_sim:
+            #self._diversity_sim_actions()
+        self._standard_round_actions()
+
+    ## Private methods
+    def _standard_round_actions(self):
         for scientist in self.scientists:
             # Whether 'tis nobler to experiment
             scientist.decide_round_research_action()
