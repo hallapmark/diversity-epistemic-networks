@@ -8,7 +8,7 @@ class ENetworkType(Enum):
    CYCLE = auto()
 
 class ENParams(NamedTuple):
-    scientist_popcount: int
+    scientist_init_popcount: int
     network_type: ENetworkType
     n_per_round: int
     epsilon: float # How much better theory B is. pB = 0.5 + epsilon
@@ -19,6 +19,7 @@ class ENParams(NamedTuple):
     m: float
     priors_func: Priors_Func = uniform_priors
     priorsetup: PriorSetup = PriorSetup()
+    lifecycle: bool = False
 
 class ENSimulationRawResults(NamedTuple):
     consensus_round: Optional[int]
@@ -27,6 +28,8 @@ class ENSimulationRawResults(NamedTuple):
     # Final round for an unstable network (where we left off, manual max rounds threshold reached)
     unstable_conclusion_round: Optional[int]
     prop_agents_confident_in_true_view: float
+    prop_retired_confident: Optional[float] = None
+    prop_working_confident: Optional[float] = None
     
 class ENResultsSummary(NamedTuple):
     sims_proportion_consensus_reached: str
@@ -37,6 +40,10 @@ class ENResultsSummary(NamedTuple):
     sims_avg_research_abandonment_round: str
     sims_unstable_count: str
     av_prop_agents_confident_in_true_view: str
+    sd: str
+    cv: str
+    av_prop_working_confident: str = "N/A"
+    av_prop_retired_confident: str = "N/A"
     
 class ENSimsSummary(NamedTuple):
     params: ENParams

@@ -14,18 +14,22 @@ class Scientist(JeffreyUpdater, CredenceBasedSupervisor, BinomialExperimenter):
                  epsilon: float, 
                  low_stop: float,
                  prior: float,
-                 m: float):
+                 m: float,
+                 latecomer: bool = False):
         super().__init__(epsilon = epsilon,
                          m = m,
                          prior = prior,
                          low_stop = low_stop)
         self.n_per_round = n_per_round
         self.binomial_experiment_gen = ExperimentGen(rng)
+        self.previous_binomial_experiment: Optional[BinomialExperiment] = None
         self.round_binomial_experiment: Optional[BinomialExperiment] = None
+        self.rounds_of_experience = 0
+        self.latecomer = latecomer
     
     def __str__(self):
-        k = self.round_binomial_experiment.k if self.round_binomial_experiment else 'N/A'
-        n = self.round_binomial_experiment.n if self.round_binomial_experiment else 'N/A'
+        k = self.previous_binomial_experiment.k if self.previous_binomial_experiment else 'N/A'
+        n = self.previous_binomial_experiment.n if self.previous_binomial_experiment else 'N/A'
         return f"credence = {round(self.credence, 3)}, k = {k}, n = {n}"
 
     # BinomialExperimenter implementation
