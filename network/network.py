@@ -20,10 +20,24 @@ class ENetwork():
             prior,
             params.m
             ) for prior in priors]
-        #self.intransigent_scientists: list[Scientist] = []
         if not len(self.scientists) == params.scientist_init_popcount:
             raise ValueError(
                 "Something went wrong. !(len(self.scientists) == scientist_popcount)")
+        self.skeptics: list[Scientist] = []
+        if params.skeptical_agents_setup and not params.stable_confidence_threshold:
+            setup = params.skeptical_agents_setup
+            if setup.n_skeptical:
+                skeptic_priors = rng.uniform(low = setup.min_cr, high = setup.max_cr, size = setup.n_skeptical).tolist()
+                for prior in skeptic_priors:
+                    self.skeptics.append(Scientist(rng,
+                                                               params.n_per_round,
+                                                               params.epsilon,
+                                                               params.low_stop,
+                                                               prior,
+                                                               params.m))
+        for _ in range(len(self.skeptics)):
+            indices: np.ndarray = np.arange(len(self.scientists))
+            self.scientists.pop(rng.choice(indices))
         self.retired: list[Scientist] = []
         self._structure_scientific_network(self.scientists, params.network_type)
 
@@ -34,7 +48,8 @@ class ENetwork():
         match network_type:
             case ENetworkType.COMPLETE:
                 for scientist in scientists:
-                    self._add_all_influencers_for_updater(scientist, scientists)
+                    self._add_all_influencers_for_updater(scientist, scientists + self.skeptics)
+
             case ENetworkType.CYCLE:
                 for i, scientist in enumerate(scientists):
                     self._add_cycle_influencers_for_updater(scientist, i, scientists)
@@ -51,12 +66,12 @@ class ENetwork():
 
     ## Private methods
     def _standard_round_actions(self):
-        for scientist in self.scientists:
+        for scientist in self.scientists + self.skeptics:
             # Whether 'tis nobler to experiment
             scientist.decide_round_research_action()
         for scientist in self.scientists:
             scientist.jeffrey_update_credence()
-        for scientist in self.scientists:
+        for scientist in self.scientists + self.skeptics:
             scientist.previous_binomial_experiment = scientist.round_binomial_experiment
             scientist.round_binomial_experiment = None
             scientist.rounds_of_experience += 1
@@ -107,17 +122,32 @@ class ENetwork():
         # experimenting and updating credence.
         # Nobody exits before 10 rounds of experience.
         # And there is a limit on network contraction.
-        if self.rng.uniform() < 0.25:
+        if self.rng.uniform() < 0.2:
             # TODO: Parametrize?
-            if len(scientists) <= math.ceil(self.params.scientist_init_popcount * 0.7):
+            all_scientists = self.scientists + self.skeptics
+            if len(all_scientists) <= math.ceil(self.params.scientist_init_popcount * 0.7):
                 return
-            experienced_scientists = [s for s in scientists if s.rounds_of_experience > 10]
+            experienced_scientists = [s for s in all_scientists if s.rounds_of_experience > 10]
             if not experienced_scientists:
                 return
             indices: np.ndarray = np.arange(len(experienced_scientists))
             s: Scientist = experienced_scientists[self.rng.choice(indices)]
             self.retired.append(s)
-            self.scientists.remove(s)
+            if s in self.scientists:
+                self.scientists.remove(s)
+            if s in self.skeptics:
+                self.skeptics.remove(s)
+                params = self.params
+                setup = params.skeptical_agents_setup
+                if setup:
+                    prior = self.rng.uniform(low = setup.min_cr,
+                                             high = setup.max_cr)
+                    self.skeptics.append(Scientist(self.rng,
+                                                   params.n_per_round,
+                                                   params.epsilon,
+                                                   params.low_stop,
+                                                   prior,
+                                                   params.m))
             # print(f"Retired: {s}. Round: {self._rounds_played + 1}")
             # print(f"len(scientists): {len(scientists)}")
 
@@ -127,7 +157,7 @@ class ENetwork():
         scientists = self.scientists
         # There is a chance that a new scientist enters the discourse (e.g. someone enters
         # PhD program and starts research on the topic)
-        if self.rng.uniform() < 0.25:
+        if self.rng.uniform() < 0.2:
             # Set a limit on network expansion
             # TODO: Parametrize?
             if len(scientists) > math.floor(self.params.scientist_init_popcount * 1.3):
@@ -143,7 +173,10 @@ class ENetwork():
             for existing_scientist in scientists:
                 new_s.add_jeffrey_influencer(existing_scientist)
                 existing_scientist.add_jeffrey_influencer(new_s)
+            for skeptic in self.skeptics:
+                new_s.add_jeffrey_influencer(skeptic)
             scientists.append(new_s)
+            #print(f"A new scientist has been admitted. Round {self._rounds_played}")
 
     def _add_all_influencers_for_updater(self,
                                            updater: JeffreyUpdater,
@@ -151,7 +184,7 @@ class ENetwork():
         for influencer in influencers:
             updater.add_jeffrey_influencer(influencer)
     
-    def _add_cycle_influencers_for_updater(self, 
+    def _add_cycle_influencers_for_updater(self,
                                            updater: JeffreyUpdater,
                                            i: int,
                                            influencers: List[Scientist]):

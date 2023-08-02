@@ -7,6 +7,12 @@ class ENetworkType(Enum):
    COMPLETE = auto()
    CYCLE = auto()
 
+class SkepticalAgentsSetup(NamedTuple):
+    # Add n skeptical agents
+    n_skeptical: Optional[int]
+    min_cr: float
+    max_cr: float
+
 class ENParams(NamedTuple):
     scientist_init_popcount: int
     network_type: ENetworkType
@@ -20,6 +26,7 @@ class ENParams(NamedTuple):
     priors_func: Priors_Func = uniform_priors
     priorsetup: PriorSetup = PriorSetup()
     lifecycle: bool = False
+    skeptical_agents_setup: Optional[SkepticalAgentsSetup] = None
 
 class ENSimulationRawResults(NamedTuple):
     consensus_round: Optional[int]
@@ -30,6 +37,7 @@ class ENSimulationRawResults(NamedTuple):
     prop_agents_confident_in_true_view: float
     prop_retired_confident: Optional[float] = None
     prop_working_confident: Optional[float] = None
+    n_all_agents: Optional[float] = None
     
 class ENResultsSummary(NamedTuple):
     sims_proportion_consensus_reached: str
@@ -42,6 +50,7 @@ class ENResultsSummary(NamedTuple):
     av_prop_agents_confident_in_true_view: str
     sd: str
     cv: str
+    av_n_all_agents: str = "N/A"
     av_prop_working_confident: str = "N/A"
     av_prop_retired_confident: str = "N/A"
     

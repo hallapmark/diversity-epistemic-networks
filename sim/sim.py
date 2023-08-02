@@ -21,10 +21,11 @@ class EpistemicNetworkSimulation():
             self._sim_action(i)
             if i == self.params.max_research_rounds:
                 en = self.epistemic_network
-                all_conf = self._prop_truth_confidently(en.scientists + en.retired)
+                all_conf = self._prop_truth_confidently(en.scientists + en.retired + en.skeptics)
                 if self.params.lifecycle:
-                    working_conf = self._prop_truth_confidently(en.scientists)
+                    working_conf = self._prop_truth_confidently(en.scientists + en.skeptics)
                     retired_conf = self._prop_truth_confidently(en.retired)
+                    n_all_agents = len(en.scientists + en.skeptics + en.retired)
                     self.results = ENSimulationRawResults(
                         consensus_round=None,
                         research_abandoned_round=None,
@@ -32,7 +33,8 @@ class EpistemicNetworkSimulation():
                         unstable_conclusion_round=i,
                         prop_agents_confident_in_true_view=all_conf,
                         prop_retired_confident=retired_conf,
-                        prop_working_confident=working_conf)
+                        prop_working_confident=working_conf,
+                        n_all_agents=n_all_agents)
                     break
                 self.results = ENSimulationRawResults(None, None, None, i, all_conf)
     

@@ -16,6 +16,7 @@ class ENSimType(Enum):
     ZOLLMAN_CYCLE = auto()
     POLARIZATION = auto()
     LIFECYCLE = auto()
+    LIFECYCLE_W_SKEPTICS = auto()
 
 class ENSimSetup():
     def __init__(self,
@@ -46,18 +47,29 @@ class ENSimSetup():
                 self.setup_sims(configs, "oconnor2018.csv")
             case ENSimType.LIFECYCLE:
                 CT = 0.99
-                # TODO: DOUBLE CHECK MAX ROUNDS
                 configs = [ENParams(
-                    pop, ENetworkType.COMPLETE, n, e, 0.5, rounds, None, m, confident_priors,
+                    pop, ENetworkType.COMPLETE, n, e, 0.5, 400, None, m, confident_priors,
                     PriorSetup(confident_start_config=ConfidentStartConfig(c, CT)), True
-                    )   for pop in (20,) # 6, 10, 20, 50)
-                        for e in (0.05,) #0.01, 0.05, 0.1, 0.15
+                    )   for pop in (50,) # 6, 10, 20, 50)
+                        for e in (0.01, 0.05,) #0.01, 0.05, 0.1, 0.15
                         for m in (2,) # 1, 1.1, 1.5, 2, 2.5)]
-                        for n in (10,) # 1, 5, 10, 20, 50, 100
+                        for n in (5,) # 1, 5, 10, 20, 50, 100
+                        for c in (1,)]
+                self.setup_sims(configs, "lifecycle.csv")
+            case ENSimType.LIFECYCLE_W_SKEPTICS:
+                CT = 0.99
+                configs = [ENParams(
+                    pop, ENetworkType.COMPLETE, n, e, 0.5, 400, None, m, confident_priors,
+                    PriorSetup(confident_start_config=ConfidentStartConfig(c, CT)), True,
+                    SkepticalAgentsSetup(skep_n, 0.501, 0.8)
+                    )   for pop in (50,) # 6, 10, 20, 50)
+                        for e in (0.01, 0.05,) #0.01, 0.05, 0.1, 0.15
+                        for m in (2,) # 1, 1.1, 1.5, 2, 2.5)]
+                        for n in (5,) # 1, 5, 10, 20, 50, 100
                         for c in (1,)
-                        for rounds in (800,)]
-                self.setup_sims(configs, "lifecycle25cv.csv")
-
+                        for skep_n in (1,2)
+]
+                self.setup_sims(configs, "lifecycle_w_skeptics.csv")
     def setup_sims(self, configs: List[ENParams], output_filename: str):
         # We need to be careful when passing rng instances to starmap. If we do not set independent seeds, 
         # we will get the *same* binomial experiments each simulation since the subprocesses share the parent's initial 
@@ -119,7 +131,7 @@ class ENSimSetup():
         props_confident = [res.prop_agents_confident_in_true_view for res in results]
         av_prop_confident_in_true_view = round(float(np.mean(props_confident)), 3)
         sd = stdev(props_confident)
-        cv = sd / av_prop_confident_in_true_view # Coefficient of variation
+        cv = round(sd / av_prop_confident_in_true_view, 3) # Coefficient of variation
         if params.lifecycle:
             av_prop_working_confident = str(round(float(
                 np.mean([res.prop_working_confident for res in results if res.prop_working_confident])),
@@ -127,21 +139,25 @@ class ENSimSetup():
             av_prop_retired_confident = str(round(float(
                 np.mean([res.prop_retired_confident for res in results if res.prop_retired_confident])),
                 3))
+            av_n_all_agents = str(round(float(np.mean(
+                [res.n_all_agents for res in results if res.n_all_agents])), 3))
             return ENResultsSummary(
-                prop_cons,
-                av_c_r,
-                prop_pol,
-                av_p_r,
-                prop_aband,
-                av_a_r,
-                unstable_count,
-                str(av_prop_confident_in_true_view),
-                str(sd),
-                str(cv),
-                av_prop_working_confident,
-                av_prop_retired_confident)
+                sims_proportion_consensus_reached=prop_cons,
+                sims_avg_consensus_round=av_c_r,
+                sims_proportion_polarization=prop_pol,
+                sims_avg_polarization_round=av_p_r,
+                sims_proportion_research_abandoned=prop_aband,
+                sims_avg_research_abandonment_round=av_a_r,
+                sims_unstable_count=unstable_count,
+                av_prop_agents_confident_in_true_view=str(av_prop_confident_in_true_view),
+                sd=str(round(sd, 3)),
+                cv=str(cv),
+                av_n_all_agents=av_n_all_agents,
+                av_prop_working_confident=av_prop_working_confident,
+                av_prop_retired_confident=av_prop_retired_confident)
         return ENResultsSummary(
-            prop_cons, av_c_r, prop_pol, av_p_r, prop_aband, av_a_r, unstable_count, str(av_prop_confident_in_true_view), str(sd), str(cv))
+            prop_cons, av_c_r, prop_pol, av_p_r, prop_aband, av_a_r, unstable_count, 
+            str(av_prop_confident_in_true_view), str(sd), str(cv))
 
     def run_sim(self,
                 rng: np.random.Generator,
