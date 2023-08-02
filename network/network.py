@@ -38,6 +38,9 @@ class ENetwork():
         for _ in range(len(self.skeptics)):
             indices: np.ndarray = np.arange(len(self.scientists))
             self.scientists.pop(rng.choice(indices))
+        for s in self.scientists + self.skeptics:
+            # We assume that the network we start off with has some experience
+            s.rounds_of_experience = 20 
         self.retired: list[Scientist] = []
         self._structure_scientific_network(self.scientists, params.network_type)
 
@@ -52,6 +55,7 @@ class ENetwork():
 
             case ENetworkType.CYCLE:
                 for i, scientist in enumerate(scientists):
+                    # NOTE: Skeptics are unsupported for the cycle network
                     self._add_cycle_influencers_for_updater(scientist, i, scientists)
             case _:
                 print("Invalid. All ENetworkType need to be specifically matched.")
@@ -118,65 +122,66 @@ class ENetwork():
 
     def _retire(self):
         scientists = self.scientists
-        # There is a chance that an existing scientist retires. They stop
-        # experimenting and updating credence.
-        # Nobody exits before 10 rounds of experience.
-        # And there is a limit on network contraction.
-        if self.rng.uniform() < 0.2:
-            # TODO: Parametrize?
-            all_scientists = self.scientists + self.skeptics
-            if len(all_scientists) <= math.ceil(self.params.scientist_init_popcount * 0.7):
-                return
-            experienced_scientists = [s for s in all_scientists if s.rounds_of_experience > 10]
-            if not experienced_scientists:
-                return
-            indices: np.ndarray = np.arange(len(experienced_scientists))
-            s: Scientist = experienced_scientists[self.rng.choice(indices)]
-            self.retired.append(s)
-            if s in self.scientists:
-                self.scientists.remove(s)
-            if s in self.skeptics:
-                self.skeptics.remove(s)
-                params = self.params
-                setup = params.skeptical_agents_setup
-                if setup:
-                    prior = self.rng.uniform(low = setup.min_cr,
-                                             high = setup.max_cr)
-                    self.skeptics.append(Scientist(self.rng,
-                                                   params.n_per_round,
-                                                   params.epsilon,
-                                                   params.low_stop,
-                                                   prior,
-                                                   params.m))
-            # print(f"Retired: {s}. Round: {self._rounds_played + 1}")
-            # print(f"len(scientists): {len(scientists)}")
+        # Every x rounds, a scientist exits
+        if not self._rounds_played % 8 == 0:
+            return
+        # unless a limiton network contraction is hit
+        all_scientists = self.scientists + self.skeptics
+        if len(all_scientists) <= math.ceil(self.params.scientist_init_popcount * 0.7):
+            return
+        # and unless no experienced scientist is found
+        experienced_scientists = [s for s in all_scientists if s.rounds_of_experience >= 20]
+        if not experienced_scientists:
+            return
+        
+        indices: np.ndarray = np.arange(len(experienced_scientists))
+        s: Scientist = experienced_scientists[self.rng.choice(indices)]
+        self.retired.append(s)
+        if s in self.scientists:
+            self.scientists.remove(s)
+        if s in self.skeptics:
+            self.skeptics.remove(s)
+            params = self.params
+            setup = params.skeptical_agents_setup
+            if setup:
+                prior = self.rng.uniform(low = setup.min_cr,
+                                            high = setup.max_cr)
+                self.skeptics.append(Scientist(self.rng,
+                                                params.n_per_round,
+                                                params.epsilon,
+                                                params.low_stop,
+                                                prior,
+                                                params.m))
+        # print(f"Retired: {s}. Round: {self._rounds_played + 1}")
+        # print(f"len(scientists): {len(scientists)}")
 
     def _admissions(self):
-        if not self._rounds_played > 10:
+        # Every x rounds, a new scientist enters the discourse (e.g. someone enters
+        # PhD program and starts research on the topic)
+        if not self._rounds_played % 8 == 0:
             return
         scientists = self.scientists
-        # There is a chance that a new scientist enters the discourse (e.g. someone enters
-        # PhD program and starts research on the topic)
-        if self.rng.uniform() < 0.2:
-            # Set a limit on network expansion
-            # TODO: Parametrize?
-            if len(scientists) > math.floor(self.params.scientist_init_popcount * 1.3):
-                return
-            cr = self.rng.uniform(UNIFORM_LOW)
-            new_s = Scientist(self.rng,
-                              self.params.n_per_round,
-                              self.params.epsilon,
-                              self.params.low_stop,
-                              cr,
-                              self.params.m,
-                              True)
-            for existing_scientist in scientists:
-                new_s.add_jeffrey_influencer(existing_scientist)
-                existing_scientist.add_jeffrey_influencer(new_s)
-            for skeptic in self.skeptics:
-                new_s.add_jeffrey_influencer(skeptic)
-            scientists.append(new_s)
-            #print(f"A new scientist has been admitted. Round {self._rounds_played}")
+        all_scientists = scientists + self.skeptics
+        
+        # unless a limit on network expansion is hit
+        if len(all_scientists) > math.floor(self.params.scientist_init_popcount * 1.3):
+            return
+        
+        cr = self.rng.uniform(UNIFORM_LOW)
+        new_s = Scientist(self.rng,
+                            self.params.n_per_round,
+                            self.params.epsilon,
+                            self.params.low_stop,
+                            cr,
+                            self.params.m,
+                            True)
+        for existing_scientist in scientists:
+            new_s.add_jeffrey_influencer(existing_scientist)
+            existing_scientist.add_jeffrey_influencer(new_s)
+        for skeptic in self.skeptics:
+            new_s.add_jeffrey_influencer(skeptic)
+        scientists.append(new_s)
+        #print(f"A new scientist has been admitted. Round {self._rounds_played}")
 
     def _add_all_influencers_for_updater(self,
                                            updater: JeffreyUpdater,

@@ -48,28 +48,28 @@ class ENSimSetup():
             case ENSimType.LIFECYCLE:
                 CT = 0.99
                 configs = [ENParams(
-                    pop, ENetworkType.COMPLETE, n, e, 0.5, 400, None, m, confident_priors,
+                    pop, ENetworkType.COMPLETE, n, e, 0.5, 600, None, m, confident_priors,
                     PriorSetup(confident_start_config=ConfidentStartConfig(c, CT)), True
-                    )   for pop in (50,) # 6, 10, 20, 50)
-                        for e in (0.01, 0.05,) #0.01, 0.05, 0.1, 0.15
-                        for m in (2,) # 1, 1.1, 1.5, 2, 2.5)]
-                        for n in (5,) # 1, 5, 10, 20, 50, 100
+                    )   for pop in (10, 20, 50) # 6, 10, 20, 50)
+                        for e in (0.05, 0.1) #0.01, 0.05, 0.1, 0.15
+                        for m in (2, 2.5, 3) # 1, 1.1, 1.5, 2, 2.5, 3)]
+                        for n in (5, 20) # 1, 5, 10, 20, 50, 100
                         for c in (1,)]
-                self.setup_sims(configs, "lifecycle.csv")
+                self.setup_sims(configs, "lifecycle_every8.csv")
             case ENSimType.LIFECYCLE_W_SKEPTICS:
                 CT = 0.99
                 configs = [ENParams(
-                    pop, ENetworkType.COMPLETE, n, e, 0.5, 400, None, m, confident_priors,
+                    pop, ENetworkType.COMPLETE, n, e, 0.5, 600, None, m, confident_priors,
                     PriorSetup(confident_start_config=ConfidentStartConfig(c, CT)), True,
                     SkepticalAgentsSetup(skep_n, 0.501, 0.8)
-                    )   for pop in (50,) # 6, 10, 20, 50)
-                        for e in (0.01, 0.05,) #0.01, 0.05, 0.1, 0.15
-                        for m in (2,) # 1, 1.1, 1.5, 2, 2.5)]
-                        for n in (5,) # 1, 5, 10, 20, 50, 100
+                    )   for pop in (10, 20, 50) # 6, 10, 20, 50)
+                        for e in (0.05, 0.1,) #0.01, 0.05, 0.1, 0.15
+                        for m in (2, 2.5, 3) # 1, 1.1, 1.5, 2, 2.5)]
+                        for n in (5, 20) # 1, 5, 10, 20, 50, 100
                         for c in (1,)
-                        for skep_n in (1,2)
+                        for skep_n in (1,2,3)
 ]
-                self.setup_sims(configs, "lifecycle_w_skeptics.csv")
+                self.setup_sims(configs, "lifecycle_w_skeptics_every8.csv")
     def setup_sims(self, configs: List[ENParams], output_filename: str):
         # We need to be careful when passing rng instances to starmap. If we do not set independent seeds, 
         # we will get the *same* binomial experiments each simulation since the subprocesses share the parent's initial 
