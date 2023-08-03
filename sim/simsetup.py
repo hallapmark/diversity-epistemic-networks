@@ -104,7 +104,7 @@ class ENSimSetup():
         sims_summary = self.process_sims_results(results, params)
         return ENSimsSummary(params, sims_summary)
     
-    def process_sims_results(self, results: list[ENSimulationRawResults], params: ENParams) -> ENResultsSummary:
+    def process_sims_results(self, results: list[ENSingleSimResults], params: ENParams) -> ENResultsSummary:
         cons_sims = [res for res in results if res.consensus_round]
         polarized_sims = [res for res in results if res.stable_pol_round]
         abandon_sims = [res for res in results if res.research_abandoned_round]
@@ -132,6 +132,8 @@ class ENSimSetup():
         av_prop_confident_in_true_view = round(float(np.mean(props_confident)), 3)
         sd = stdev(props_confident)
         cv = round(sd / av_prop_confident_in_true_view, 3) # Coefficient of variation
+        sims_mean_brier_score = str(
+            round(float(np.mean([res.sim_mean_brier_score for res in results])), 3))
         if params.lifecycle:
             av_prop_working_confident = str(round(float(
                 np.mean([res.prop_working_confident for res in results if res.prop_working_confident])),
@@ -152,16 +154,17 @@ class ENSimSetup():
                 av_prop_agents_confident_in_true_view=str(av_prop_confident_in_true_view),
                 sd=str(round(sd, 3)),
                 cv=str(cv),
+                sims_mean_brier_score=sims_mean_brier_score,
                 av_n_all_agents=av_n_all_agents,
                 av_prop_working_confident=av_prop_working_confident,
                 av_prop_retired_confident=av_prop_retired_confident)
         return ENResultsSummary(
             prop_cons, av_c_r, prop_pol, av_p_r, prop_aband, av_a_r, unstable_count, 
-            str(av_prop_confident_in_true_view), str(sd), str(cv))
+            str(av_prop_confident_in_true_view), str(sd), str(cv), sims_mean_brier_score)
 
     def run_sim(self,
                 rng: np.random.Generator,
-                params: ENParams) -> Optional[ENSimulationRawResults]:
+                params: ENParams) -> Optional[ENSingleSimResults]:
         network = ENetwork(rng, params)
         simulation = EpistemicNetworkSimulation(network, params)
         simulation.run_sim()

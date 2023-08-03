@@ -28,13 +28,14 @@ class ENParams(NamedTuple):
     lifecycle: bool = False
     skeptical_agents_setup: Optional[SkepticalAgentsSetup] = None
 
-class ENSimulationRawResults(NamedTuple):
+class ENSingleSimResults(NamedTuple):
     consensus_round: Optional[int]
     research_abandoned_round: Optional[int]
     stable_pol_round: Optional[int]
     # Final round for an unstable network (where we left off, manual max rounds threshold reached)
     unstable_conclusion_round: Optional[int]
     prop_agents_confident_in_true_view: float
+    sim_mean_brier_score: float
     prop_retired_confident: Optional[float] = None
     prop_working_confident: Optional[float] = None
     n_all_agents: Optional[float] = None
@@ -50,6 +51,7 @@ class ENResultsSummary(NamedTuple):
     av_prop_agents_confident_in_true_view: str
     sd: str
     cv: str
+    sims_mean_brier_score: str
     av_n_all_agents: str = "N/A"
     av_prop_working_confident: str = "N/A"
     av_prop_retired_confident: str = "N/A"
