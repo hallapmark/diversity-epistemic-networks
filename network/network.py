@@ -24,17 +24,19 @@ class ENetwork():
             raise ValueError(
                 "Something went wrong. !(len(self.scientists) == scientist_popcount)")
         self.skeptics: list[Scientist] = []
-        if params.skeptical_agents_setup and not params.stable_confidence_threshold:
+        if params.skeptical_agents_setup:
+            if params.stable_confidence_threshold:
+                raise NotImplementedError("Skeptics are only supported in unstable networks.")
             setup = params.skeptical_agents_setup
             if setup.n_skeptical:
                 skeptic_priors = rng.uniform(low = setup.min_cr, high = setup.max_cr, size = setup.n_skeptical).tolist()
                 for prior in skeptic_priors:
                     self.skeptics.append(Scientist(rng,
-                                                               params.n_per_round,
-                                                               params.epsilon,
-                                                               params.low_stop,
-                                                               prior,
-                                                               params.m))
+                                                   params.n_per_round,
+                                                   params.epsilon,
+                                                   params.low_stop,
+                                                   prior,
+                                                   params.m))
         for _ in range(len(self.skeptics)):
             indices: np.ndarray = np.arange(len(self.scientists))
             self.scientists.pop(rng.choice(indices))
@@ -58,8 +60,7 @@ class ENetwork():
                     # NOTE: Skeptics are unsupported for the cycle network
                     self._add_cycle_influencers_for_updater(scientist, i, scientists)
             case _:
-                print("Invalid. All ENetworkType need to be specifically matched.")
-                raise NotImplementedError
+                raise NotImplementedError("ENetworkType needs to be specifically matched.")
 
     ## Interface
     def enetwork_play_round(self, unstable_sim: bool = False):
@@ -86,7 +87,7 @@ class ENetwork():
                 """
                 For unstable sims, currently only a complete network is supported
                 """)
-        if self.params.lifecycle:
+        if self.params.lifecyclesetup:
             self._lifecycle()
             self._standard_round_actions()
         else:
@@ -117,45 +118,37 @@ class ENetwork():
         # this to have a comparison class)
 
     def _lifecycle(self):
-        self._retire()
-        self._admissions()
+        skeptic_retired = self._retire()
+        self._admissions(skeptic_retired)
 
-    def _retire(self):
+    def _retire(self) -> bool:
+        """
+        Retire an agent. Returns True if the retired agent was a skeptic, False otherwise
+        """
         scientists = self.scientists
         # Every x rounds, a scientist exits
         if not self._rounds_played % 8 == 0:
-            return
-        # unless a limiton network contraction is hit
-        all_scientists = self.scientists + self.skeptics
-        if len(all_scientists) <= math.ceil(self.params.scientist_init_popcount * 0.7):
-            return
+            return False
+        # unless a limit on network contraction is hit
+        working_scientists = scientists + self.skeptics
+        if len(working_scientists) <= math.ceil(self.params.scientist_init_popcount * 0.5):
+            return False
         # and unless no experienced scientist is found
-        experienced_scientists = [s for s in all_scientists if s.rounds_of_experience >= 20]
+        experienced_scientists = [s for s in working_scientists if s.rounds_of_experience >= 20]
         if not experienced_scientists:
-            return
-        
+            return False
         indices: np.ndarray = np.arange(len(experienced_scientists))
         s: Scientist = experienced_scientists[self.rng.choice(indices)]
         self.retired.append(s)
         if s in self.scientists:
             self.scientists.remove(s)
+            return False
         if s in self.skeptics:
             self.skeptics.remove(s)
-            params = self.params
-            setup = params.skeptical_agents_setup
-            if setup:
-                prior = self.rng.uniform(low = setup.min_cr,
-                                            high = setup.max_cr)
-                self.skeptics.append(Scientist(self.rng,
-                                                params.n_per_round,
-                                                params.epsilon,
-                                                params.low_stop,
-                                                prior,
-                                                params.m))
-        # print(f"Retired: {s}. Round: {self._rounds_played + 1}")
-        # print(f"len(scientists): {len(scientists)}")
-
-    def _admissions(self):
+            return True
+        return False
+    
+    def _admissions(self, skeptic_needed: bool):
         # Every x rounds, a new scientist enters the discourse (e.g. someone enters
         # PhD program and starts research on the topic)
         if not self._rounds_played % 8 == 0:
@@ -164,10 +157,28 @@ class ENetwork():
         all_scientists = scientists + self.skeptics
         
         # unless a limit on network expansion is hit
-        if len(all_scientists) > math.floor(self.params.scientist_init_popcount * 1.3):
+        if len(all_scientists) > math.floor(self.params.scientist_init_popcount * 1.5):
             return
         
-        cr = self.rng.uniform(UNIFORM_LOW)
+        params = self.params
+        if not params.lifecyclesetup:
+            raise ValueError("Attempted admissions but lifecyclesetup is not set.")
+        if skeptic_needed:
+            skep_setup = params.skeptical_agents_setup
+            if skep_setup:
+                prior = self.rng.uniform(low = skep_setup.min_cr,
+                                         high = skep_setup.max_cr)
+                skeptic = Scientist(self.rng,
+                                                params.n_per_round,
+                                                params.epsilon,
+                                                params.low_stop,
+                                                prior,
+                                                params.m)
+                self.skeptics.append(skeptic)
+                for existing_scientist in scientists:
+                    existing_scientist.add_jeffrey_influencer(skeptic)
+                return
+        cr = params.lifecyclesetup.admissions_priors_func(1, self.rng, params.priorsetup)[0]
         new_s = Scientist(self.rng,
                             self.params.n_per_round,
                             self.params.epsilon,
@@ -178,10 +189,9 @@ class ENetwork():
         for existing_scientist in scientists:
             new_s.add_jeffrey_influencer(existing_scientist)
             existing_scientist.add_jeffrey_influencer(new_s)
-        for skeptic in self.skeptics:
-            new_s.add_jeffrey_influencer(skeptic)
+        for existing_skeptic in self.skeptics:
+            new_s.add_jeffrey_influencer(existing_skeptic)
         scientists.append(new_s)
-        #print(f"A new scientist has been admitted. Round {self._rounds_played}")
 
     def _add_all_influencers_for_updater(self,
                                            updater: JeffreyUpdater,
