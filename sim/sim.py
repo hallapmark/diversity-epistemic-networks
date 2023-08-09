@@ -11,8 +11,11 @@ class EpistemicNetworkSimulation():
                  params: ENParams):
         self.epistemic_network = epistemic_network
         self.params = params
-        self._rounds_played = 0
+        self._sim_round = 0
         self.results: Optional[ENSingleSimResults] = None
+        self.max_possible_brier_penalty: float = 0
+        # Tally the total brier penalties from each round
+        self.brier_penalty_total: float = 0
     
     def run_sim(self):
         for i in range(1, self.params.max_research_rounds + 1):
@@ -21,13 +24,15 @@ class EpistemicNetworkSimulation():
             self._sim_action(i)
             if i == self.params.max_research_rounds:
                 en = self.epistemic_network
-                all_conf = self._prop_truth_confidently(en.scientists + en.retired + en.skeptics)
                 # In non-lifecycle sims, the latter two will be empty
                 all_scientists = en.scientists + en.skeptics + en.retired
+                working_scientists = en.scientists + en.skeptics
+                all_conf = self._prop_truth_confidently(all_scientists)
                 n_all_agents = len(all_scientists)
-                mean_brier = self._mean_brier_score([s.credence for s in all_scientists])
-                if self.params.lifecycle:
-                    working_conf = self._prop_truth_confidently(en.scientists + en.skeptics)
+                brier_ratio = self.brier_penalty_total / self.max_possible_brier_penalty
+                game_exit_snapshot_brier = self._round_mean_brier_score([s.credence for s in working_scientists])
+                if self.params.lifecyclesetup:
+                    working_conf = self._prop_truth_confidently(working_scientists)
                     retired_conf = self._prop_truth_confidently(en.retired)
                     self.results = ENSingleSimResults(
                         consensus_round=None,
@@ -35,7 +40,9 @@ class EpistemicNetworkSimulation():
                         stable_pol_round=None,
                         unstable_conclusion_round=i,
                         prop_agents_confident_in_true_view=all_conf,
-                        sim_mean_brier_score=mean_brier,
+                        sim_brier_penalty_total=self.brier_penalty_total,
+                        sim_brier_penalty_ratio_to_max=brier_ratio,
+                        sim_game_exit_snapshot_brier=game_exit_snapshot_brier,
                         prop_retired_confident=retired_conf,
                         prop_working_confident=working_conf,
                         n_all_agents=n_all_agents)
@@ -46,16 +53,21 @@ class EpistemicNetworkSimulation():
                     stable_pol_round=None,
                     unstable_conclusion_round=i,
                     prop_agents_confident_in_true_view=all_conf,
-                    sim_mean_brier_score=mean_brier)
+                    sim_brier_penalty_total=self.brier_penalty_total,
+                    sim_brier_penalty_ratio_to_max=brier_ratio,
+                    sim_game_exit_snapshot_brier=game_exit_snapshot_brier)
                 break
     
-    def _mean_brier_score(self, credences: list[float]) -> float:
+    def _round_mean_brier_score(self, credences: list[float]) -> float:
         #e.g. H1: 0.6 is true value, H2: it is  .4.
         # In fact, H1 is true
         # E.g. My credence is .8
         # ((.8-1) + (1-.8))**2 -> (.2 + .2)**2 = .16
         # 1/n * .16 = 0.08
-        return float(np.mean([(cr - 1)**2 for cr in credences]))
+        return float(np.mean([self._brier_score(cr) for cr in credences]))
+
+    def _brier_score(self, credence: float) -> float:
+        return (credence - 1)**2
 
     def _prop_truth_confidently(self, agents: list[Scientist]) -> float:
         # TODO: Parametrize?
@@ -83,16 +95,29 @@ class EpistemicNetworkSimulation():
         return True
 
     def _sim_action(self, sim_round: int):
-        # if sim_round % 300 == 0:
+        # if sim_round % 500 == 0:
         #     print(f"A sim has reached round {sim_round}")
+        #     for scientist in self.epistemic_network.scientists:
+        #         print(scientist)
+        #     print("Skeptic:")
+        #     for scientist in self.epistemic_network.skeptics:
+        #         print(scientist)
         if self.results:
             return
-        self._rounds_played = sim_round
+        self._sim_round = sim_round
         # Check if we are in a config where we do not presume a stable outcome.
         if not self.params.stable_confidence_threshold:
             self._unstable_sim_action()
-            return
-        self._stable_sim_action(sim_round, self.params.stable_confidence_threshold)
+        else:
+            self._stable_sim_action(sim_round, self.params.stable_confidence_threshold)
+        en = self.epistemic_network
+        working_scientists = en.scientists + en.skeptics
+        round_briers = [self._brier_score(s.credence) for s in working_scientists]
+        self.brier_penalty_total += sum(round_briers)
+        n = len(working_scientists)
+        # This keeps track of the maximum brier penalty from the round, which
+        # is given by 1 * n (the maximum penalty from a single agent is 1)
+        self.max_possible_brier_penalty += n
 
     def _stable_sim_action(self, sim_round: int, stable_confidence_threshold: float):
         # We are in a config where we are looking for a stable outcome. Check options for
@@ -100,40 +125,49 @@ class EpistemicNetworkSimulation():
         # TODO: Make this a func. self.stable_sim_action()
         scientists = self.epistemic_network.scientists
         credences = np.array([s.credence for s in scientists])
-        mean_brier = self._mean_brier_score([s.credence for s in scientists])
+        game_exit_snapshot_brier = self._round_mean_brier_score([s.credence for s in scientists])
         # low-stops AT 0.5.
         if all(credences <= self.params.low_stop):
             # Everyone's credence in B is at or below 0.5. Abandon further research
             prop_truth_confidently = self._prop_truth_confidently(scientists)
+            brier_ratio = self.brier_penalty_total / self.max_possible_brier_penalty
             self.results = ENSingleSimResults(
                 consensus_round=None,
                 research_abandoned_round=sim_round,
                 stable_pol_round=None,
                 unstable_conclusion_round=None,
                 prop_agents_confident_in_true_view=prop_truth_confidently,
-                sim_mean_brier_score=mean_brier)
+                sim_brier_penalty_total=self.brier_penalty_total,
+                sim_brier_penalty_ratio_to_max=brier_ratio,
+                sim_game_exit_snapshot_brier=game_exit_snapshot_brier)
             return
          # high-stops if ABOVE 0.99
         if all(credences > self.params.stable_confidence_threshold):
             # Everyone's credence in B is above .99. Scientific consensus reached
             prop_truth_confidently = self._prop_truth_confidently(scientists)
+            brier_ratio = self.brier_penalty_total / self.max_possible_brier_penalty
             self.results = ENSingleSimResults(
                 consensus_round=sim_round,
                 research_abandoned_round=None,
                 stable_pol_round=None,
                 unstable_conclusion_round=None,
                 prop_agents_confident_in_true_view=prop_truth_confidently,
-                sim_mean_brier_score=mean_brier)
+                sim_brier_penalty_total=self.brier_penalty_total,
+                sim_brier_penalty_ratio_to_max=brier_ratio,
+                sim_game_exit_snapshot_brier=game_exit_snapshot_brier)
             return
         if self._stable_polarization(scientists, stable_confidence_threshold):
             prop_truth_confidently = self._prop_truth_confidently(scientists)
+            brier_ratio = self.brier_penalty_total / self.max_possible_brier_penalty
             self.results = ENSingleSimResults(
                 consensus_round=None,
                 research_abandoned_round=None,
                 stable_pol_round=sim_round,
                 unstable_conclusion_round=None,
                 prop_agents_confident_in_true_view=prop_truth_confidently,
-                sim_mean_brier_score=mean_brier)
+                sim_brier_penalty_total=self.brier_penalty_total,
+                sim_brier_penalty_ratio_to_max=brier_ratio,
+                sim_game_exit_snapshot_brier=game_exit_snapshot_brier)
             return
         self.epistemic_network.enetwork_play_round()
 

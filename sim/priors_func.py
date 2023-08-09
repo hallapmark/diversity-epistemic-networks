@@ -34,3 +34,6 @@ def confident_priors(pop: int, rng: np.random.Generator, priorsetup: PriorSetup)
     # NOTE: This is ordered. Which does not matter in a fully connected network. But it
     # potentially would for a cycle. So mix it if you ever want to use this on a cycle network.
     return priors
+
+def low_priors(pop: int, rng: np.random.Generator, priorsetup: PriorSetup) -> list[float]:
+    return rng.uniform(low = 0.001, high = 0.25, size = pop).tolist()

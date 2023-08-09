@@ -13,6 +13,9 @@ class SkepticalAgentsSetup(NamedTuple):
     min_cr: float
     max_cr: float
 
+class LifeCycleSetup(NamedTuple):
+    admissions_priors_func: Priors_Func = low_priors
+
 class ENParams(NamedTuple):
     scientist_init_popcount: int
     network_type: ENetworkType
@@ -25,33 +28,43 @@ class ENParams(NamedTuple):
     m: float
     priors_func: Priors_Func = uniform_priors
     priorsetup: PriorSetup = PriorSetup()
-    lifecycle: bool = False
+    lifecyclesetup: Optional[LifeCycleSetup] = None
     skeptical_agents_setup: Optional[SkepticalAgentsSetup] = None
 
 class ENSingleSimResults(NamedTuple):
     consensus_round: Optional[int]
     research_abandoned_round: Optional[int]
     stable_pol_round: Optional[int]
-    # Final round for an unstable network (where we left off, manual max rounds threshold reached)
     unstable_conclusion_round: Optional[int]
+    # Final round for an unstable network (where we left off, manual max rounds threshold reached)
     prop_agents_confident_in_true_view: float
-    sim_mean_brier_score: float
+    sim_brier_penalty_total: float
+    sim_brier_penalty_ratio_to_max: float
+    # The ratio of the brier penalty obtained to the maximum possible penalty
+    # Maximum penalty would be obtained if all agents were maximally distant
+    # from the truth every round of the game
+    sim_game_exit_snapshot_brier: float
+    # Mean brier score of all agents at the point of exit from the game
+    # An agent exits if they retire
+    # An agent exits if the game is over
     prop_retired_confident: Optional[float] = None
     prop_working_confident: Optional[float] = None
     n_all_agents: Optional[float] = None
     
 class ENResultsSummary(NamedTuple):
     sims_proportion_consensus_reached: str
-    sims_avg_consensus_round: str
+    sims_av_consensus_round: str
     sims_proportion_polarization: str
-    sims_avg_polarization_round: str
+    sims_av_polarization_round: str
     sims_proportion_research_abandoned: str
-    sims_avg_research_abandonment_round: str
+    sims_av_research_abandonment_round: str
     sims_unstable_count: str
     av_prop_agents_confident_in_true_view: str
     sd: str
     cv: str
-    sims_mean_brier_score: str
+    sims_mean_brier_penalty_total: str
+    sims_mean_brier_penalty_ratio_to_max: str
+    sims_mean_snapshot_brier: str
     av_n_all_agents: str = "N/A"
     av_prop_working_confident: str = "N/A"
     av_prop_retired_confident: str = "N/A"
