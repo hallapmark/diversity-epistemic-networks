@@ -61,9 +61,10 @@ class ENResultsSummary(NamedTuple):
     sims_av_research_abandonment_round: str
     sims_unstable_count: str
     sims_prop_agents_confident_in_true_view: str
-    sims_sd_av_prop: str
+    sims_sd_prop_agents: str
     sims_av_total_brier_penalty: str
     sims_av_ratio_brier_to_max_possible: str
+    sims_sd_av_ratio_brier: str
     sims_av_exit_snapshot_brier: str
     sims_av_n_all_agents: str = "N/A"
     sims_av_prop_working_confident: str = "N/A"

@@ -47,30 +47,28 @@ class ENSimSetup():
             case ENSimType.LIFECYCLE:
                 CT = 0.99
                 configs = [ENParams(
-                    pop, ENetworkType.COMPLETE, n, e, 0.5, 2000, None, m, confident_priors,
-                    PriorSetup(confident_start_config=ConfidentStartConfig(c, CT)),
+                    pop, ENetworkType.COMPLETE, n, e, 0.5, rounds, None, m, confident_priors,
+                    PriorSetup(confident_start_config=ConfidentStartConfig(1, CT)),
                     LifeCycleSetup()
                     )   for pop in (20,) # 6, 10, 20, 50)
-                        for e in (0.1,) #0.01, 0.05, 0.1, 0.15
-                        for m in (2.5,) # 1, 1.1, 1.5, 2, 2.5, 3)]
-                        for n in (5,) # 1, 5, 10, 20, 50, 100
-                        for c in (1,)]
-                        #for rounds in range(1000, 4000, 1000)]
-                self.setup_sims(configs, "lifecycle_every8test.csv")
+                        for e in (0.01,) #0.01, 0.05, 0.1, 0.15
+                        for m in (1.5,) # 1, 1.1, 1.5, 2, 2.5, 3)]
+                        for n in (5,) # 1, 5, 10, 20, 50, 100]
+                        for rounds in range(1000, 10000, 1000)]
+                self.setup_sims(configs, "lifecycle_every8_pop20_e001_m15_n5.csv")
             case ENSimType.LIFECYCLE_W_SKEPTICS:
                 CT = 0.99
                 configs = [ENParams(
                     pop, ENetworkType.COMPLETE, n, e, 0.5, rounds, None, m, confident_priors,
-                    PriorSetup(confident_start_config=ConfidentStartConfig(c, CT)),
+                    PriorSetup(confident_start_config=ConfidentStartConfig(1, CT)),
                     LifeCycleSetup(), SkepticalAgentsSetup(skep_n, 0.501, 0.502)
                     )   for pop in (20,) # 6, 10, 20, 50)
-                        for e in (0.1,) #0.01, 0.05, 0.1, 0.15
-                        for m in (2.5,) # 1, 1.1, 1.5, 2, 2.5)]
+                        for e in (0.01,) #0.01, 0.05, 0.1, 0.15
+                        for m in (1.5,) # 1, 1.1, 1.5, 2, 2.5)]
                         for n in (5,) # 1, 5, 10, 20, 50, 100
-                        for c in (1,)
                         for skep_n in (1,)
-                        for rounds in range(1000, 4000, 1000)]
-                self.setup_sims(configs, "lifecycle_w_skeptics_every8_skep501.csv")
+                        for rounds in range(1000, 10000, 1000)]
+                self.setup_sims(configs, "lifecycle_w_skep_every8_pop20_e001_m15_n5_skep51_.csv")
     def setup_sims(self, configs: List[ENParams], output_filename: str):
         # We need to be careful when passing rng instances to starmap. If we do not set independent seeds, 
         # we will get the *same* binomial experiments each simulation since the subprocesses share the parent's initial 
@@ -132,15 +130,16 @@ class ENSimSetup():
                 [res.research_abandoned_round for res in abandon_sims if res.research_abandoned_round is not None])
             av_a_r = str(round(float(av_a_r), 3))
         props_confident = [res.prop_agents_confident_in_true_view for res in results]
-        av_prop_confident_in_true_view = round(float(np.mean(props_confident)), 3)
-        sd = stdev(props_confident)
-        cv = round(sd / av_prop_confident_in_true_view, 3) # Coefficient of variation
+        av_prop_confident_in_true_view = str(round(float(np.mean(props_confident)), 3))
+        sd_prop_confident = str(round(stdev(props_confident), 3))
         sims_snapshot_brier = str(
             round(float(np.mean([res.sim_game_exit_snapshot_brier for res in results])), 3))
         av_sim_brier_penalty_total = str(
             round(float(np.mean([res.sim_brier_penalty_total for res in results])), 3))
+        brier_penalty_ratios = [res.sim_brier_penalty_ratio_to_max for res in results]
         av_sim_brier_total_to_max_possible = str(
-            round(float(np.mean([res.sim_brier_penalty_ratio_to_max for res in results])), 3))
+            round(float(np.mean(brier_penalty_ratios)), 3))
+        sims_sd_av_ratio_brier = str(round(stdev(brier_penalty_ratios), 3))
         if params.lifecyclesetup:
             av_prop_working_confident = str(round(float(
                 np.mean([res.prop_working_confident for res in results if res.prop_working_confident is not None])),
@@ -158,19 +157,29 @@ class ENSimSetup():
                 sims_proportion_research_abandoned=prop_aband,
                 sims_av_research_abandonment_round=av_a_r,
                 sims_unstable_count=unstable_count,
-                sims_prop_agents_confident_in_true_view=str(av_prop_confident_in_true_view),
-                sd=str(round(sd, 3)),
-                cv=str(cv),
+                sims_prop_agents_confident_in_true_view=av_prop_confident_in_true_view,
+                sims_sd_prop_agents=sd_prop_confident,
                 sims_av_total_brier_penalty=av_sim_brier_penalty_total,
                 sims_av_ratio_brier_to_max_possible=av_sim_brier_total_to_max_possible,
+                sims_sd_av_ratio_brier=sims_sd_av_ratio_brier,
                 sims_av_exit_snapshot_brier=sims_snapshot_brier,
                 sims_av_n_all_agents=av_n_all_agents,
                 sims_av_prop_working_confident=av_prop_working_confident,
                 sims_av_prop_retired_confident=av_prop_retired_confident)
         return ENResultsSummary(
-            prop_cons, av_c_r, prop_pol, av_p_r, prop_aband, av_a_r, unstable_count, 
-            str(av_prop_confident_in_true_view), str(sd), str(cv), av_sim_brier_penalty_total,
-            av_sim_brier_total_to_max_possible, sims_snapshot_brier)
+            sims_proportion_consensus_reached=prop_cons,
+            sims_av_consensus_round=av_c_r,
+            sims_proportion_polarization=prop_pol,
+            sims_av_polarization_round=av_p_r,
+            sims_proportion_research_abandoned=prop_aband,
+            sims_av_research_abandonment_round=av_a_r,
+            sims_unstable_count=unstable_count,
+            sims_prop_agents_confident_in_true_view=av_prop_confident_in_true_view,
+            sims_sd_prop_agents=sd_prop_confident,
+            sims_av_total_brier_penalty=av_sim_brier_penalty_total,
+            sims_av_ratio_brier_to_max_possible=av_sim_brier_total_to_max_possible,
+            sims_sd_av_ratio_brier=sims_sd_av_ratio_brier,
+            sims_av_exit_snapshot_brier=sims_snapshot_brier)
 
     def run_sim(self,
                 rng: np.random.Generator,
