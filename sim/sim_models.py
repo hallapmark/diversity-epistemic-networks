@@ -52,6 +52,7 @@ class ENSingleSimResults(NamedTuple):
     n_all_agents: Optional[float] = None
     
 class ENResultsSummary(NamedTuple):
+    # All states taken as a mean over all sim runs unless otherwise noted
     sims_proportion_consensus_reached: str
     sims_av_consensus_round: str
     sims_proportion_polarization: str
@@ -59,15 +60,14 @@ class ENResultsSummary(NamedTuple):
     sims_proportion_research_abandoned: str
     sims_av_research_abandonment_round: str
     sims_unstable_count: str
-    av_prop_agents_confident_in_true_view: str
-    sd: str
-    cv: str
-    sims_mean_brier_penalty_total: str
-    sims_mean_brier_penalty_ratio_to_max: str
-    sims_mean_snapshot_brier: str
-    av_n_all_agents: str = "N/A"
-    av_prop_working_confident: str = "N/A"
-    av_prop_retired_confident: str = "N/A"
+    sims_prop_agents_confident_in_true_view: str
+    sims_sd_av_prop: str
+    sims_av_total_brier_penalty: str
+    sims_av_ratio_brier_to_max_possible: str
+    sims_av_exit_snapshot_brier: str
+    sims_av_n_all_agents: str = "N/A"
+    sims_av_prop_working_confident: str = "N/A"
+    sims_av_prop_retired_confident: str = "N/A"
     
 class ENSimsSummary(NamedTuple):
     params: ENParams

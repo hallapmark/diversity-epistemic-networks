@@ -158,15 +158,15 @@ class ENSimSetup():
                 sims_proportion_research_abandoned=prop_aband,
                 sims_av_research_abandonment_round=av_a_r,
                 sims_unstable_count=unstable_count,
-                av_prop_agents_confident_in_true_view=str(av_prop_confident_in_true_view),
+                sims_prop_agents_confident_in_true_view=str(av_prop_confident_in_true_view),
                 sd=str(round(sd, 3)),
                 cv=str(cv),
-                sims_mean_brier_penalty_total=av_sim_brier_penalty_total,
-                sims_mean_brier_penalty_ratio_to_max=av_sim_brier_total_to_max_possible,
-                sims_mean_snapshot_brier=sims_snapshot_brier,
-                av_n_all_agents=av_n_all_agents,
-                av_prop_working_confident=av_prop_working_confident,
-                av_prop_retired_confident=av_prop_retired_confident)
+                sims_av_total_brier_penalty=av_sim_brier_penalty_total,
+                sims_av_ratio_brier_to_max_possible=av_sim_brier_total_to_max_possible,
+                sims_av_exit_snapshot_brier=sims_snapshot_brier,
+                sims_av_n_all_agents=av_n_all_agents,
+                sims_av_prop_working_confident=av_prop_working_confident,
+                sims_av_prop_retired_confident=av_prop_retired_confident)
         return ENResultsSummary(
             prop_cons, av_c_r, prop_pol, av_p_r, prop_aband, av_a_r, unstable_count, 
             str(av_prop_confident_in_true_view), str(sd), str(cv), av_sim_brier_penalty_total,
