@@ -54,7 +54,7 @@ class ENSimSetup():
                         for e in (0.01,) #0.01, 0.05, 0.1, 0.15
                         for m in (1.5,) # 1, 1.1, 1.5, 2, 2.5, 3)]
                         for n in (5,) # 1, 5, 10, 20, 50, 100]
-                        for rounds in range(1000, 10000, 1000)]
+                        for rounds in (12000, 15000)]
                 self.setup_sims(configs, "lifecycle_every8_pop20_e001_m15_n5.csv")
             case ENSimType.LIFECYCLE_W_SKEPTICS:
                 CT = 0.99
@@ -67,7 +67,7 @@ class ENSimSetup():
                         for m in (1.5,) # 1, 1.1, 1.5, 2, 2.5)]
                         for n in (5,) # 1, 5, 10, 20, 50, 100
                         for skep_n in (1,)
-                        for rounds in range(1000, 10000, 1000)]
+                        for rounds in (12000, 15000)]
                 self.setup_sims(configs, "lifecycle_w_skep_every8_pop20_e001_m15_n5_skep51_.csv")
     def setup_sims(self, configs: List[ENParams], output_filename: str):
         # We need to be careful when passing rng instances to starmap. If we do not set independent seeds, 
@@ -140,6 +140,8 @@ class ENSimSetup():
         av_sim_brier_total_to_max_possible = str(
             round(float(np.mean(brier_penalty_ratios)), 3))
         sims_sd_av_ratio_brier = str(round(stdev(brier_penalty_ratios), 3))
+        sims_av_non_skeptic_brier_ratio = str(
+            round(float(np.mean([res.sim_non_skeptic_brier_ratio for res in results])), 3))
         if params.lifecyclesetup:
             av_prop_working_confident = str(round(float(
                 np.mean([res.prop_working_confident for res in results if res.prop_working_confident is not None])),
@@ -161,6 +163,7 @@ class ENSimSetup():
                 sims_sd_prop_agents=sd_prop_confident,
                 sims_av_total_brier_penalty=av_sim_brier_penalty_total,
                 sims_av_ratio_brier_to_max_possible=av_sim_brier_total_to_max_possible,
+                sims_av_non_skeptic_brier_ratio=sims_av_non_skeptic_brier_ratio,
                 sims_sd_av_ratio_brier=sims_sd_av_ratio_brier,
                 sims_av_exit_snapshot_brier=sims_snapshot_brier,
                 sims_av_n_all_agents=av_n_all_agents,
@@ -178,6 +181,7 @@ class ENSimSetup():
             sims_sd_prop_agents=sd_prop_confident,
             sims_av_total_brier_penalty=av_sim_brier_penalty_total,
             sims_av_ratio_brier_to_max_possible=av_sim_brier_total_to_max_possible,
+            sims_av_non_skeptic_brier_ratio=sims_av_non_skeptic_brier_ratio,
             sims_sd_av_ratio_brier=sims_sd_av_ratio_brier,
             sims_av_exit_snapshot_brier=sims_snapshot_brier)
 

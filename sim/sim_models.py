@@ -43,6 +43,7 @@ class ENSingleSimResults(NamedTuple):
     # The ratio of the brier penalty obtained to the maximum possible penalty
     # Maximum penalty would be obtained if all agents were maximally distant
     # from the truth every round of the game
+    sim_non_skeptic_brier_ratio: float
     sim_game_exit_snapshot_brier: float
     # Mean brier score of all agents at the point of exit from the game
     # An agent exits if they retire
@@ -64,6 +65,7 @@ class ENResultsSummary(NamedTuple):
     sims_sd_prop_agents: str
     sims_av_total_brier_penalty: str
     sims_av_ratio_brier_to_max_possible: str
+    sims_av_non_skeptic_brier_ratio: str
     sims_sd_av_ratio_brier: str
     sims_av_exit_snapshot_brier: str
     sims_av_n_all_agents: str = "N/A"
