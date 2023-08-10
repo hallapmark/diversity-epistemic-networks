@@ -4,6 +4,10 @@ from sim.sim_models import *
 import numpy as np
 from typing import List
 
+class RetireResponse(NamedTuple):
+    agent_retired: bool
+    skeptic_retired: bool
+
 class ENetwork():
     def __init__(self,
                  rng: np.random.Generator,
@@ -118,69 +122,61 @@ class ENetwork():
         # this to have a comparison class)
 
     def _lifecycle(self):
-        skeptic_retired = self._retire()
-        self._admissions(skeptic_retired)
-
-    def _retire(self) -> bool:
-        """
-        Retire an agent. Returns True if the retired agent was a skeptic, False
-        if somebody else or nobody was retired.
-        """
+        """ Every x rounds, a scientist exits and a new one enters """
         if not self.params.lifecyclesetup:
             raise ValueError("Attempted lifecycle action but lifecycle setup not set.")
-        scientists = self.scientists
-        # Every x rounds, a scientist exits
         if not self._rounds_played % self.params.lifecyclesetup.rounds_to_new_agent == 0:
-            return False
-        # unless a limit on network contraction is hit
+            return
+        self._admissions(self._retire())
+
+    def _retire(self) -> RetireResponse:
+        """
+        Retire an agent. Returns True if the retired agent was a skeptic, False
+        if somebody else retired or nobody retired.
+        """
+        scientists = self.scientists
         working_scientists = scientists + self.skeptics
-        if len(working_scientists) <= math.ceil(self.params.scientist_init_popcount * 0.5):
-            return False
-        # and unless no experienced scientist is found
+        # Do not retire if no experienced scientist is found
         experienced_scientists = [s for s in working_scientists if s.rounds_of_experience >= 20]
         if not experienced_scientists:
-            return False
+            return RetireResponse(agent_retired=False, skeptic_retired=False)
         indices: np.ndarray = np.arange(len(experienced_scientists))
         s: Scientist = experienced_scientists[self.rng.choice(indices)]
         self.retired.append(s)
         if s in self.scientists:
             self.scientists.remove(s)
-            return False
+            return RetireResponse(agent_retired=True, skeptic_retired=False)
         if s in self.skeptics:
             self.skeptics.remove(s)
-            return True
-        return False
+            return RetireResponse(agent_retired=True, skeptic_retired=True)
+        raise NotImplementedError("We can only retire scientists and skeptics.")
     
-    def _admissions(self, skeptic_needed: bool):
+    def _admissions(self, retire_response: RetireResponse):
         # Every x rounds, a new scientist enters the discourse (e.g. someone enters
         # PhD program and starts research on the topic)
-        if not self._rounds_played % 8 == 0:
-            return
         scientists = self.scientists
-        all_scientists = scientists + self.skeptics
-        
-        # unless a limit on network expansion is hit
-        if len(all_scientists) > math.floor(self.params.scientist_init_popcount * 1.5):
-            return
-        
         params = self.params
         if not params.lifecyclesetup:
             raise ValueError("Attempted admissions but lifecyclesetup is not set.")
-        if skeptic_needed:
+        if not retire_response.agent_retired:
+            # We only admit a new agent if someone just retired
+            return
+        if retire_response.skeptic_retired:
             skep_setup = params.skeptical_agents_setup
-            if skep_setup:
-                prior = self.rng.uniform(low = skep_setup.min_cr,
-                                         high = skep_setup.max_cr)
-                skeptic = Scientist(self.rng,
-                                                params.n_per_round,
-                                                params.epsilon,
-                                                params.low_stop,
-                                                prior,
-                                                params.m)
-                self.skeptics.append(skeptic)
-                for existing_scientist in scientists:
-                    existing_scientist.add_jeffrey_influencer(skeptic)
-                return
+            if not skep_setup:
+                raise ValueError("Attempted skeptic admission but skeptic setup not set.")
+            prior = self.rng.uniform(low = skep_setup.min_cr,
+                                     high = skep_setup.max_cr)
+            skeptic = Scientist(self.rng,
+                                            params.n_per_round,
+                                            params.epsilon,
+                                            params.low_stop,
+                                            prior,
+                                            params.m)
+            self.skeptics.append(skeptic)
+            for existing_scientist in scientists:
+                existing_scientist.add_jeffrey_influencer(skeptic)
+            return
         cr = params.lifecyclesetup.admissions_priors_func(1, self.rng, params.priorsetup)[0]
         new_s = Scientist(self.rng,
                             self.params.n_per_round,
