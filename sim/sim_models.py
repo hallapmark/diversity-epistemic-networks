@@ -14,6 +14,7 @@ class SkepticalAgentsSetup(NamedTuple):
     max_cr: float
 
 class LifeCycleSetup(NamedTuple):
+    rounds_to_new_agent: int
     admissions_priors_func: Priors_Func = low_priors
 
 class ENParams(NamedTuple):

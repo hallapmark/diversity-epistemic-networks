@@ -123,11 +123,14 @@ class ENetwork():
 
     def _retire(self) -> bool:
         """
-        Retire an agent. Returns True if the retired agent was a skeptic, False otherwise
+        Retire an agent. Returns True if the retired agent was a skeptic, False
+        if somebody else or nobody was retired.
         """
+        if not self.params.lifecyclesetup:
+            raise ValueError("Attempted lifecycle action but lifecycle setup not set.")
         scientists = self.scientists
         # Every x rounds, a scientist exits
-        if not self._rounds_played % 8 == 0:
+        if not self._rounds_played % self.params.lifecyclesetup.rounds_to_new_agent == 0:
             return False
         # unless a limit on network contraction is hit
         working_scientists = scientists + self.skeptics
