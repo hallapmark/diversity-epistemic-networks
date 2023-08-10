@@ -48,29 +48,33 @@ class ENSimSetup():
                 CT = 0.99
                 configs = [ENParams(
                     pop, ENetworkType.COMPLETE, n, e, 0.5, rounds, None, m, confident_priors,
-                    PriorSetup(confident_start_config=ConfidentStartConfig(1, CT)),
+                    PriorSetup(confident_start_config=ConfidentStartConfig(1, CT),
+                               admissions_low_priors_ceiling=cr_ceiling),
                     LifeCycleSetup(rounds_to_new_agent)
                     )   for pop in (20,) # 6, 10, 20, 50)
                         for e in (0.05,) #0.01, 0.05, 0.1, 0.15
                         for m in (2.5,) # 1, 1.1, 1.5, 2, 2.5, 3)]
                         for n in (5,) # 1, 5, 10, 20, 50, 100]
-                        for rounds in (5000,)
-                        for rounds_to_new_agent in (2, 5, 10, 20, 50)]
-                self.setup_sims(configs, "lifecycle_vary_entry_rate.csv")
+                        for rounds in (1000,)
+                        for rounds_to_new_agent in (10,)
+                        for cr_ceiling in (.3,)]
+                self.setup_sims(configs, "lifecycle.csv")
             case ENSimType.LIFECYCLE_W_SKEPTICS:
                 CT = 0.99
                 configs = [ENParams(
                     pop, ENetworkType.COMPLETE, n, e, 0.5, rounds, None, m, confident_priors,
-                    PriorSetup(confident_start_config=ConfidentStartConfig(1, CT)),
+                    PriorSetup(confident_start_config=ConfidentStartConfig(1, CT),
+                               admissions_low_priors_ceiling=cr_ceiling),
                     LifeCycleSetup(rounds_to_new_agent), SkepticalAgentsSetup(skep_n, 0.501, 0.502)
                     )   for pop in (20,) # 6, 10, 20, 50)
                         for e in (0.05,) #0.01, 0.05, 0.1, 0.15
                         for m in (2.5,) # 1, 1.1, 1.5, 2, 2.5)]
                         for n in (5,) # 1, 5, 10, 20, 50, 100
                         for skep_n in (1,)
-                        for rounds in (5000,)
-                        for rounds_to_new_agent in (2, 5, 10, 20, 50)]
-                self.setup_sims(configs, "lifecycle_w_skep_vary_entry_rate.csv")
+                        for rounds in (1000,)
+                        for rounds_to_new_agent in (10,)
+                        for cr_ceiling in (.3,)]
+                self.setup_sims(configs, "lifecycle_w_skep.csv")
     def setup_sims(self, configs: List[ENParams], output_filename: str):
         # We need to be careful when passing rng instances to starmap. If we do not set independent seeds, 
         # we will get the *same* binomial experiments each simulation since the subprocesses share the parent's initial 

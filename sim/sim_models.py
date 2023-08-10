@@ -19,18 +19,24 @@ class LifeCycleSetup(NamedTuple):
 
 class ENParams(NamedTuple):
     scientist_init_popcount: int
-    network_type: ENetworkType
-    n_per_round: int
+    network_type: ENetworkType # Controls connectedness of network
+    n_per_round: int # How many experiments per round an agent will conduct
     epsilon: float # How much better theory B is. pB = 0.5 + epsilon
     low_stop: float # The threshold at which the informative action will no longer be taken
     max_research_rounds: int # When we terminate the simulation, if it has not already stopped
-    # For simulations where we presume a stable outcome, what level of confidence is required
     stable_confidence_threshold: Optional[float]
+    # For simulations where we presume a stable outcome, what level of confidence is required
+    # of agents before we conclude that the network has converged on the true view
     m: float
+    # m: how distrustful agents are of others' evidence (larger m means more distrustful)
     priors_func: Priors_Func = uniform_priors
+    # Controls priors distribution for the initial network
     priorsetup: PriorSetup = PriorSetup()
+    # Additional settings for the prior distribution
     lifecyclesetup: Optional[LifeCycleSetup] = None
+    # Setup for lifecycle networks with admissions and retirings
     skeptical_agents_setup: Optional[SkepticalAgentsSetup] = None
+    # Setup for networks with skeptics
 
 class ENSingleSimResults(NamedTuple):
     consensus_round: Optional[int]

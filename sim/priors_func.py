@@ -11,8 +11,9 @@ class ConfidentStartConfig(NamedTuple):
 
 class PriorSetup(NamedTuple):
     uniform_low: float = UNIFORM_LOW
-    # If set, most agents will start with a high credence in the true theory, B
     confident_start_config: Optional[ConfidentStartConfig] = None
+    # If set, most agents will start with a high credence in the true theory, B
+    admissions_low_priors_ceiling: Optional[float] = None
 
 # Takes as input number of priors, an rng generator as input, and a PriorSetup config.
 # Outputs a priors distribution
@@ -36,4 +37,6 @@ def confident_priors(pop: int, rng: np.random.Generator, priorsetup: PriorSetup)
     return priors
 
 def low_priors(pop: int, rng: np.random.Generator, priorsetup: PriorSetup) -> list[float]:
-    return rng.uniform(low = 0.001, high = 0.25, size = pop).tolist()
+    ceiling = priorsetup.admissions_low_priors_ceiling
+    high = ceiling if ceiling else 0.25
+    return rng.uniform(low = 0.001, high = high, size = pop).tolist()
