@@ -24,14 +24,18 @@ def uniform_priors(pop: int, rng: np.random.Generator, priorsetup: PriorSetup) -
 
 # Start off with most having confidence in the better theory
 def confident_priors(pop: int, rng: np.random.Generator, priorsetup: PriorSetup) -> list[float]:
+    """ Start off with much of the population having high confidence in the true view.
+    The typical use case is to have everyone in the population start off with .991
+    confidence in the true view (minus any potential skeptics)."""
     if not priorsetup.confident_start_config:
-        raise ValueError("Must define ConfidentPopConfig.")
+        raise ValueError("Must define ConfidentStartConfig.")
     # We round up: we never assign cr == high_credence to less than proportion_confident of the agents
     # E.g. 0.8 x 13 = 10.4 -> 11 agents get credences at high_credence
     n_confident = math.ceil(priorsetup.confident_start_config.min_prop_confident * pop)
     priors = [priorsetup.confident_start_config.high_credence] * n_confident
     if n_confident < pop:
         priors.extend(rng.uniform(low = UNIFORM_LOW, size = pop - n_confident).tolist())
+    # The others get a uniform distribution
     # NOTE: This is ordered. Which does not matter in a fully connected network. But it
     # potentially would for a cycle. So mix it if you ever want to use this on a cycle network.
     return priors

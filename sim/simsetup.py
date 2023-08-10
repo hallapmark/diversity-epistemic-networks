@@ -1,8 +1,8 @@
-from statistics import stdev
 import numpy as np
 import timeit
 from multiprocessing import Pool
 from network.network import *
+from sim.output_processor import OutputProcessor
 from sim.sim import *
 from sim.sim_models import *
 from typing import Optional, List
@@ -23,6 +23,7 @@ class ENSimSetup():
                  sim_type: Optional[ENSimType]):
         self.sim_count = sim_count
         self.sim_type = sim_type
+        self.output_processor = OutputProcessor()
     
     def quick_setup(self):
         """ Setup sims from pre-defined templates, e.g. ENSimType.ZOLLMAN_COMPLETE. 
@@ -33,49 +34,46 @@ class ENSimSetup():
             # A reproduction of Zollman 2007, https://philpapers.org/rec/ZOLTCS
             case ENSimType.ZOLLMAN_COMPLETE:
                 configs = [ENParams(pop, ENetworkType.COMPLETE, 1000, 0.001, 0.5, 3000, 0.99, 0) for pop in range(4, 12)]
-                self.setup_sims(configs, "zollman2007.csv")
+                self.run_configs(configs, "zollman2007.csv")
             case ENSimType.ZOLLMAN_CYCLE:
                 configs = [ENParams(pop, ENetworkType.CYCLE, 1000, 0.001, 0.5, 3000, 0.99, 0) for pop in range(4, 12)]
-                self.setup_sims(configs, "zollman2007.csv")
+                self.run_configs(configs, "zollman2007.csv")
             # A reproduction of O'Connor & Weatherall 2018, https://philpapers.org/rec/OCOSP
             case ENSimType.POLARIZATION: 
                 configs = [ENParams(pop, ENetworkType.COMPLETE, n, e, 0.5, 10000, 0.99, m) for pop in (6, 10, 20) # 2, 6, 10, 20
                                                                                                 for e in (0.2,) # 0.01, 0.05, 0.1, 0.15, 0.2
                                                                                                 for m in np.arange(1.0, 3.1, 0.1).tolist() 
                                                                                                 for n in (50,)] # 1, 5, 10, 20, 50, 100
-                self.setup_sims(configs, "oconnor2018.csv")
+                self.run_configs(configs, "oconnor2018.csv")
             case ENSimType.LIFECYCLE:
                 CT = 0.99
                 configs = [ENParams(
                     pop, ENetworkType.COMPLETE, n, e, 0.5, rounds, None, m, confident_priors,
-                    PriorSetup(confident_start_config=ConfidentStartConfig(1, CT),
-                               admissions_low_priors_ceiling=cr_ceiling),
-                    LifeCycleSetup(rounds_to_new_agent)
+                    PriorSetup(confident_start_config=ConfidentStartConfig(1, CT)),
+                    LifeCycleSetup(rounds_to_new_agent, uniform_priors)
                     )   for pop in (20,) # 6, 10, 20, 50)
                         for e in (0.05,) #0.01, 0.05, 0.1, 0.15
-                        for m in (2.5,) # 1, 1.1, 1.5, 2, 2.5, 3)]
+                        for m in (1, 1.1, 1.5, 2, 2.5, 3) # 1, 1.1, 1.5, 2, 2.5, 3)]
                         for n in (5,) # 1, 5, 10, 20, 50, 100]
                         for rounds in (1000,)
-                        for rounds_to_new_agent in (10,)
-                        for cr_ceiling in (.3,)]
-                self.setup_sims(configs, "lifecycle.csv")
+                        for rounds_to_new_agent in (10,)]
+                self.run_configs(configs, "lifecycle_uniform_admissions.csv")
             case ENSimType.LIFECYCLE_W_SKEPTICS:
                 CT = 0.99
                 configs = [ENParams(
                     pop, ENetworkType.COMPLETE, n, e, 0.5, rounds, None, m, confident_priors,
-                    PriorSetup(confident_start_config=ConfidentStartConfig(1, CT),
-                               admissions_low_priors_ceiling=cr_ceiling),
-                    LifeCycleSetup(rounds_to_new_agent), SkepticalAgentsSetup(skep_n, 0.501, 0.502)
+                    PriorSetup(confident_start_config=ConfidentStartConfig(1, CT)),
+                    LifeCycleSetup(rounds_to_new_agent, uniform_priors),
+                    SkepticalAgentsSetup(skep_n, 0.501, 0.502)
                     )   for pop in (20,) # 6, 10, 20, 50)
                         for e in (0.05,) #0.01, 0.05, 0.1, 0.15
-                        for m in (2.5,) # 1, 1.1, 1.5, 2, 2.5)]
+                        for m in (1, 1.1, 1.5, 2, 2.5, 3) # 1, 1.1, 1.5, 2, 2.5)]
                         for n in (5,) # 1, 5, 10, 20, 50, 100
                         for skep_n in (1,)
                         for rounds in (1000,)
-                        for rounds_to_new_agent in (10,)
-                        for cr_ceiling in (.3,)]
-                self.setup_sims(configs, "lifecycle_w_skep.csv")
-    def setup_sims(self, configs: List[ENParams], output_filename: str):
+                        for rounds_to_new_agent in (10,)]
+                self.run_configs(configs, "lifecycle_uniform_admissions_w_skep.csv")
+    def run_configs(self, configs: List[ENParams], output_filename: str):
         # We need to be careful when passing rng instances to starmap. If we do not set independent seeds, 
         # we will get the *same* binomial experiments each simulation since the subprocesses share the parent's initial 
         # rng state.
@@ -89,9 +87,9 @@ class ENSimSetup():
             results_summary = self.run_sims_for_param_config(param_config, rng_streams)
             time_elapsed = timeit.default_timer() - start_time
             print(f'Time elapsed: {time_elapsed}s')
-            csv_data = self.data_for_writing(results_summary, self.sim_count, time_elapsed)
             print()
-            self.record_sim(csv_data, output_filename)
+            csv_data = self.output_processor.data_for_writing(results_summary, self.sim_count, time_elapsed)
+            self.output_processor.record_sim(csv_data, output_filename)
 
     def run_sims_for_param_config(self, params: ENParams, rng_streams: List[np.random.Generator]) -> ENSimsSummary:
         if not rng_streams:
@@ -106,90 +104,8 @@ class ENSimSetup():
         if None in results_from_sims:
             raise Warning("Failed to get results from at least one simulation.")
         results = [r for r in results_from_sims if r is not None]
-        sims_summary = self.process_sims_results(results, params)
+        sims_summary = self.output_processor.process_sims_results(results, params)
         return ENSimsSummary(params, sims_summary)
-    
-    def process_sims_results(self, results: list[ENSingleSimResults], params: ENParams) -> ENResultsSummary:
-        # In all the following, "is not None" is verbose but helps prevent a bug where "if x" would evaluate
-        # to False when the value is 0 (for some parameters, 0 can be a legitimate result)
-        cons_sims = [res for res in results if res.consensus_round is not None]
-        polarized_sims = [res for res in results if res.stable_pol_round is not None]
-        abandon_sims = [res for res in results if res.research_abandoned_round is not None]
-        unstable_sims = [res for res in results if res.unstable_conclusion_round is not None]
-        cons_count = len(cons_sims)
-        polarized_count = len(polarized_sims)
-        abandoned_count = len(abandon_sims)
-        unstable_count = str(len(unstable_sims))
-        prop_cons = str(round(cons_count / len(results), 3))
-        prop_pol = str(round(polarized_count / len(results), 3))
-        prop_aband = str(round(abandoned_count / len(results), 3))
-        av_c_r = av_p_r = av_a_r = "N/A"
-        if cons_sims:
-            av_c_r = np.mean([res.consensus_round for res in cons_sims if res.consensus_round is not None])
-            av_c_r = str(round(float(av_c_r), 3))
-        if polarized_sims:
-            av_p_r = np.mean(
-                [res.stable_pol_round for res in polarized_sims if res.stable_pol_round is not None])
-            av_p_r = str(round(float(av_p_r), 3))
-        if abandon_sims:
-            av_a_r = np.mean(
-                [res.research_abandoned_round for res in abandon_sims if res.research_abandoned_round is not None])
-            av_a_r = str(round(float(av_a_r), 3))
-        props_confident = [res.prop_agents_confident_in_true_view for res in results]
-        av_prop_confident_in_true_view = str(round(float(np.mean(props_confident)), 3))
-        sd_prop_confident = str(round(stdev(props_confident), 3))
-        sims_snapshot_brier = str(
-            round(float(np.mean([res.sim_game_exit_snapshot_brier for res in results])), 3))
-        av_sim_brier_penalty_total = str(
-            round(float(np.mean([res.sim_brier_penalty_total for res in results])), 3))
-        brier_penalty_ratios = [res.sim_brier_penalty_ratio_to_max for res in results]
-        av_sim_brier_total_to_max_possible = str(
-            round(float(np.mean(brier_penalty_ratios)), 3))
-        sims_sd_av_ratio_brier = str(round(stdev(brier_penalty_ratios), 3))
-        sims_av_non_skeptic_brier_ratio = str(
-            round(float(np.mean([res.sim_non_skeptic_brier_ratio for res in results])), 3))
-        if params.lifecyclesetup:
-            av_prop_working_confident = str(round(float(
-                np.mean([res.prop_working_confident for res in results if res.prop_working_confident is not None])),
-                3))
-            av_prop_retired_confident = str(round(float(
-                np.mean([res.prop_retired_confident for res in results if res.prop_retired_confident is not None])),
-                3))
-            av_n_all_agents = str(round(float(np.mean(
-                [res.n_all_agents for res in results if res.n_all_agents is not None])), 3))
-            return ENResultsSummary(
-                sims_proportion_consensus_reached=prop_cons,
-                sims_av_consensus_round=av_c_r,
-                sims_proportion_polarization=prop_pol,
-                sims_av_polarization_round=av_p_r,
-                sims_proportion_research_abandoned=prop_aband,
-                sims_av_research_abandonment_round=av_a_r,
-                sims_unstable_count=unstable_count,
-                sims_prop_agents_confident_in_true_view=av_prop_confident_in_true_view,
-                sims_sd_prop_agents=sd_prop_confident,
-                sims_av_total_brier_penalty=av_sim_brier_penalty_total,
-                sims_av_ratio_brier_to_max_possible=av_sim_brier_total_to_max_possible,
-                sims_av_non_skeptic_brier_ratio=sims_av_non_skeptic_brier_ratio,
-                sims_sd_av_ratio_brier=sims_sd_av_ratio_brier,
-                sims_av_exit_snapshot_brier=sims_snapshot_brier,
-                sims_av_n_all_agents=av_n_all_agents,
-                sims_av_prop_working_confident=av_prop_working_confident,
-                sims_av_prop_retired_confident=av_prop_retired_confident)
-        return ENResultsSummary(
-            sims_proportion_consensus_reached=prop_cons,
-            sims_av_consensus_round=av_c_r,
-            sims_proportion_polarization=prop_pol,
-            sims_av_polarization_round=av_p_r,
-            sims_proportion_research_abandoned=prop_aband,
-            sims_av_research_abandonment_round=av_a_r,
-            sims_unstable_count=unstable_count,
-            sims_prop_agents_confident_in_true_view=av_prop_confident_in_true_view,
-            sims_sd_prop_agents=sd_prop_confident,
-            sims_av_total_brier_penalty=av_sim_brier_penalty_total,
-            sims_av_ratio_brier_to_max_possible=av_sim_brier_total_to_max_possible,
-            sims_av_non_skeptic_brier_ratio=sims_av_non_skeptic_brier_ratio,
-            sims_sd_av_ratio_brier=sims_sd_av_ratio_brier,
-            sims_av_exit_snapshot_brier=sims_snapshot_brier)
 
     def run_sim(self,
                 rng: np.random.Generator,
@@ -198,42 +114,3 @@ class ENSimSetup():
         simulation = EpistemicNetworkSimulation(network, params)
         simulation.run_sim()
         return simulation.results
-
-    def record_sim(self, results: ENResultsCSVWritableSummary, path: str):
-        file_exists = os.path.isfile(path)
-        # res_dir = "/results"
-        # Path(res_dir).mkdir(parents=True, exist_ok=True)
-        # filename = Path(res_dir, filename).with_suffix('.csv')
-        with open(path, newline='', mode = 'a') as csv_file:
-            writer = csv.writer(csv_file)
-            if not file_exists:
-                writer.writerow(results.headers)
-            writer.writerow(results.sim_data)
-
-    def data_for_writing(self, 
-                        sims_summary: ENSimsSummary, 
-                        sim_count: int, 
-                        time_elapsed: float) -> ENResultsCSVWritableSummary:
-        headers = ['Sim count']
-        headers.extend([param_name for param_name in sims_summary.params._asdict().keys()])
-        headers.append('sim time (s)')
-        summary_fields = [field for field in sims_summary.results_summary._asdict().keys()]
-        headers.extend(summary_fields)
-
-        sim_data = [str(sim_count)]
-        parameter_vals: list[str] = []
-        for parameter_val in sims_summary.params:
-            try:
-                # Get a *function* name e.g. the name of the priors func used
-                parameter_vals.append(parameter_val.__name__)  # type: ignore
-            except AttributeError:
-                # Get the value of any other parameter
-                parameter_vals.append(str(parameter_val))
-        sim_data.extend(parameter_vals)
-        sim_data.append(str(round(time_elapsed, 1)))
-        result_str_list = [r for r in sims_summary.results_summary]
-        print(f'Summary fields: {summary_fields}')
-        print(f'Results from config: {result_str_list}')
-        sim_data.extend(result_str_list)
-        summary = ENResultsCSVWritableSummary(headers, sim_data)
-        return summary
