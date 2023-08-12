@@ -53,7 +53,7 @@ class ENSimSetup():
                         for e in (0.05,) #0.01, 0.05, 0.1, 0.15
                         for m in (1, 1.1, 1.5, 2, 2.5, 3) # 1, 1.1, 1.5, 2, 2.5, 3)]
                         for n in (5,) # 1, 5, 10, 20, 50, 100]
-                        for rounds in (1000,)
+                        for rounds in (2000,)
                         for rounds_to_new_agent in (10,)]
                 self.run_configs(configs, "lifecycle_uniform_admissions.csv")
             case ENSimType.LIFECYCLE_W_SKEPTICS:
@@ -68,7 +68,7 @@ class ENSimSetup():
                         for m in (1, 1.1, 1.5, 2, 2.5, 3) # 1, 1.1, 1.5, 2, 2.5)]
                         for n in (5,) # 1, 5, 10, 20, 50, 100
                         for skep_n in (1,)
-                        for rounds in (1000,)
+                        for rounds in (2000,)
                         for rounds_to_new_agent in (10,)]
                 self.run_configs(configs, "lifecycle_uniform_admissions_w_skep.csv")
     def run_configs(self, configs: List[ENParams], output_filename: str):
