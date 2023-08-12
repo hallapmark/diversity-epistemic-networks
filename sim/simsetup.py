@@ -7,8 +7,6 @@ from sim.sim import *
 from sim.sim_models import *
 from typing import Optional, List
 from enum import Enum, auto
-import os
-import csv
 
 class ENSimType(Enum):
     ZOLLMAN_COMPLETE = auto()

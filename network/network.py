@@ -67,9 +67,9 @@ class ENetwork():
                 raise NotImplementedError("ENetworkType needs to be specifically matched.")
 
     ## Interface
-    def enetwork_play_round(self, unstable_sim: bool = False):
-        if unstable_sim:
-            self._unstable_sim_actions()
+    def enetwork_play_round(self, lifecycle_sim: bool = False):
+        if lifecycle_sim:
+            self._lifecycle_sim_actions()
         self._standard_round_actions()
         self._rounds_played += 1
 
@@ -85,7 +85,7 @@ class ENetwork():
             scientist.round_binomial_experiment = None
             scientist.rounds_of_experience += 1
 
-    def _unstable_sim_actions(self):
+    def _lifecycle_sim_actions(self):
         if not self.params.network_type == ENetworkType.COMPLETE:
             raise NotImplementedError(
                 """
