@@ -25,7 +25,7 @@ class ENSimSetup():
     
     def quick_setup(self):
         """ Setup sims from pre-defined templates, e.g. ENSimType.ZOLLMAN_COMPLETE. 
-        Use setup_sims instead if you need to customize the parameters."""
+        Use func run_configs instead if you need to customize the parameters."""
         if not self.sim_type:
             raise ValueError("Quick setup can only be called if you have specified ENSimType")
         match self.sim_type:
@@ -73,8 +73,8 @@ class ENSimSetup():
                 self.run_configs(configs, "lifecycle_uniform_admissions_w_skep.csv")
     def run_configs(self, configs: List[ENParams], output_filename: str):
         # We need to be careful when passing rng instances to starmap. If we do not set independent seeds, 
-        # we will get the *same* binomial experiments each simulation since the subprocesses share the parent's initial 
-        # rng state.
+        # we will get the *same* binomial experiments each simulation since the subprocesses share the
+        # parent's initial rng state.
         # https://numpy.org/doc/stable/reference/random/parallel.html
         child_seeds = [np.random.SeedSequence(253 + i).spawn(self.sim_count) for i in range(len(configs))]
         for i, param_config in enumerate(configs):
@@ -101,7 +101,7 @@ class ENSimSetup():
         pool.join()
         if None in results_from_sims:
             raise Warning("Failed to get results from at least one simulation.")
-        results = [r for r in results_from_sims if r is not None]
+        results: list[ENSingleSimResults] = [r for r in results_from_sims if r is not None]
         sims_summary = self.output_processor.process_sims_results(results, params)
         return ENSimsSummary(params, sims_summary)
 

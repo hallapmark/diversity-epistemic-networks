@@ -32,15 +32,15 @@ class ENetwork():
             if params.stable_confidence_threshold:
                 raise NotImplementedError("Skeptics are only supported in unstable networks.")
             setup = params.skeptical_agents_setup
-            if setup.n_skeptical:
-                skeptic_priors = rng.uniform(low = setup.min_cr, high = setup.max_cr, size = setup.n_skeptical).tolist()
-                for prior in skeptic_priors:
-                    self.skeptics.append(Scientist(rng,
-                                                   params.n_per_round,
-                                                   params.epsilon,
-                                                   params.low_stop,
-                                                   prior,
-                                                   params.m))
+            skeptic_priors = rng.uniform(low = setup.min_cr, high = setup.max_cr, size = setup.n_skeptical).tolist()
+            for prior in skeptic_priors:
+                self.skeptics.append(Scientist(rng,
+                                               params.n_per_round,
+                                               params.epsilon,
+                                               params.low_stop,
+                                               prior,
+                                               params.m))
+        # We keep the total network size the same if skeptics are present
         for _ in range(len(self.skeptics)):
             indices: np.ndarray = np.arange(len(self.scientists))
             self.scientists.pop(rng.choice(indices))
@@ -193,8 +193,8 @@ class ENetwork():
         scientists.append(new_s)
 
     def _add_all_influencers_for_updater(self,
-                                           updater: JeffreyUpdater,
-                                           influencers: List[Scientist]):
+                                         updater: JeffreyUpdater,
+                                         influencers: List[Scientist]):
         for influencer in influencers:
             updater.add_jeffrey_influencer(influencer)
     
