@@ -70,6 +70,7 @@ class ENetwork():
     def enetwork_play_round(self, lifecycle_sim: bool = False):
         if lifecycle_sim:
             self._lifecycle_sim_actions()
+            return
         self._standard_round_actions()
         self._rounds_played += 1
 
