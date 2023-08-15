@@ -52,11 +52,9 @@ class JeffreyUpdater(DoxasticAgent):
                                      p_H_E: float, 
                                      posterior_p_E,
                                      p_H_nE: float) -> float:
-        """ TIt is assumed that there 
+        """ It is assumed that there
         are only two possible parameter values (two possible worlds): p and 1-p. This parameter gives
         the probability of a "success" event occurring on a given try. """
-        # This formula looks bonkers but it is derived from the full Bayes' formula (as applied to binomials).
-        # This speeds up the simulations.
         if prior > 0:
             return p_H_E * posterior_p_E + p_H_nE * (1 - posterior_p_E) 
         else:

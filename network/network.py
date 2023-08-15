@@ -92,23 +92,16 @@ class ENetwork():
                 """
                 For unstable sims, currently only a complete network is supported
                 """)
-        if self.params.lifecyclesetup:
-            self._lifecycle()
-            self._standard_round_actions()
-        else:
+        if not self.params.lifecyclesetup:
             raise NotImplementedError(
                 """
                 For unstable sims, currently only lifecycle configurations are supported.
                 """)
-        #intransigent_scientists = self.intransigent_scientists
-        #all_scientists = self.scientists + self.intransigent_scientists
-        #credences = np.array([s.credence for s in all_scientists])
-        #l = [c > 0.99 for c in credences]
-        #if not scientists:
-            #raise ValueError("No truth-seeking scientists left. Something weird is afoot.")
-        #approx_consensus_reached = np.mean(l) >= 0.8
+        self._lifecycle()
+        self._standard_round_actions()
 
-        # (1) Conversion from incentive structure
+        # Idea for future:
+        # Conversion from incentive structure
         # if approx_consensus_reached:
         #     # Convert a non-radical scientist to a contrarian to the emerging consensus
         #     non_radicals = [s for s in scientists if s.credence > 0.2]
@@ -117,10 +110,6 @@ class ENetwork():
         #     s.credence = self.rng.uniform(UNIFORM_LOW, 0.2)
         #     intransigent_scientists.append(s)
         #     scientists.remove(s)
-
-        # (2)
-        # Add diversity-preserving structure IF corresponding flag set (we also need to run without
-        # this to have a comparison class)
 
     def _lifecycle(self):
         """ Every x rounds, a scientist exits and a new one enters """
@@ -132,8 +121,7 @@ class ENetwork():
 
     def _retire(self) -> RetireResponse:
         """
-        Retire an agent. Returns True if the retired agent was a skeptic, False
-        if somebody else retired or nobody retired.
+        Retire an agent. Returns a RetireResponse.
         """
         scientists = self.scientists
         working_scientists = scientists + self.skeptics
@@ -169,23 +157,24 @@ class ENetwork():
             prior = self.rng.uniform(low = skep_setup.min_cr,
                                      high = skep_setup.max_cr)
             skeptic = Scientist(self.rng,
-                                            params.n_per_round,
-                                            params.epsilon,
-                                            params.low_stop,
-                                            prior,
-                                            params.m)
+                                params.n_per_round,
+                                params.epsilon,
+                                params.low_stop,
+                                prior,
+                                params.m)
             self.skeptics.append(skeptic)
             for existing_scientist in scientists:
                 existing_scientist.add_jeffrey_influencer(skeptic)
             return
+        # A regular agent retired – replace with regular agent.
         cr = params.lifecyclesetup.admissions_priors_func(1, self.rng, params.priorsetup)[0]
         new_s = Scientist(self.rng,
-                            self.params.n_per_round,
-                            self.params.epsilon,
-                            self.params.low_stop,
-                            cr,
-                            self.params.m,
-                            True)
+                          self.params.n_per_round,
+                          self.params.epsilon,
+                          self.params.low_stop,
+                          cr,
+                          self.params.m,
+                          True)
         for existing_scientist in scientists:
             new_s.add_jeffrey_influencer(existing_scientist)
             existing_scientist.add_jeffrey_influencer(new_s)
