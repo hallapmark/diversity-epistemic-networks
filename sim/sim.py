@@ -1,4 +1,3 @@
-from math import fabs
 from agents.scientist import Scientist
 from network.network import ENetwork
 import numpy as np

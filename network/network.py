@@ -69,8 +69,7 @@ class ENetwork():
     ## Interface
     def enetwork_play_round(self, lifecycle_sim: bool = False):
         if lifecycle_sim:
-            self._lifecycle_sim_actions()
-            return
+            self._lifecycle_round_actions()
         self._standard_round_actions()
         self._rounds_played += 1
 
@@ -86,7 +85,8 @@ class ENetwork():
             scientist.round_binomial_experiment = None
             scientist.rounds_of_experience += 1
 
-    def _lifecycle_sim_actions(self):
+    def _lifecycle_round_actions(self):
+        """ Every x rounds, a scientist exits and a new one enters """
         if not self.params.network_type == ENetworkType.COMPLETE:
             raise NotImplementedError(
                 """
@@ -97,9 +97,9 @@ class ENetwork():
                 """
                 For unstable sims, currently only lifecycle configurations are supported.
                 """)
-        self._lifecycle()
-        self._standard_round_actions()
-
+        if not self._rounds_played % self.params.lifecyclesetup.rounds_to_new_agent == 0:
+            return
+        self._admissions(self._retire())
         # Idea for future:
         # Conversion from incentive structure
         # if approx_consensus_reached:
@@ -110,14 +110,6 @@ class ENetwork():
         #     s.credence = self.rng.uniform(UNIFORM_LOW, 0.2)
         #     intransigent_scientists.append(s)
         #     scientists.remove(s)
-
-    def _lifecycle(self):
-        """ Every x rounds, a scientist exits and a new one enters """
-        if not self.params.lifecyclesetup:
-            raise ValueError("Attempted lifecycle action but lifecycle setup not set.")
-        if not self._rounds_played % self.params.lifecyclesetup.rounds_to_new_agent == 0:
-            return
-        self._admissions(self._retire())
 
     def _retire(self) -> RetireResponse:
         """
