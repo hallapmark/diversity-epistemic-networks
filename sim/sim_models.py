@@ -10,10 +10,10 @@ class ENetworkType(Enum):
    CYCLE = auto()
 
 class SkepticalAgentsSetup(NamedTuple):
-    n_skeptical: int
+    n_skeptical: int = 1
     # Add n skeptical agents
-    min_cr: float
-    max_cr: float
+    min_cr: float = .5
+    max_cr: float = .5
 
 class LifeCycleSetup(NamedTuple):
     rounds_to_new_agent: int

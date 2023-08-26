@@ -7,7 +7,7 @@ class CredenceBasedSupervisor(DoxasticAgent):
         self.low_stop = low_stop
 
     def decide_round_research_action(self):
-        if self.credence <= self.low_stop:
+        if self.credence < self.low_stop:
             self._stop_action()
         else:
             self._continue_action()
