@@ -57,8 +57,8 @@ class ENetwork():
         match network_type:
             case ENetworkType.COMPLETE:
                 for scientist in scientists:
-                    self._add_influencers_for_updater(scientist, scientists)
-                    scientist.skeptic_influencers.extend(self.skeptics)
+                    self._add_all_influencers_for_updater(scientist, scientists + self.skeptics)
+
             case ENetworkType.CYCLE:
                 for i, scientist in enumerate(scientists):
                     # NOTE: Skeptics are unsupported for the cycle network
@@ -156,7 +156,7 @@ class ENetwork():
                                 params.m)
             self.skeptics.append(skeptic)
             for existing_scientist in scientists:
-                existing_scientist.skeptic_influencers.append(skeptic)
+                existing_scientist.add_jeffrey_influencer(skeptic)
             return
         # A regular agent retired – replace with regular agent.
         cr = params.lifecyclesetup.admissions_priors_func(1, self.rng, params.priorsetup)[0]
@@ -171,12 +171,12 @@ class ENetwork():
             new_s.add_jeffrey_influencer(existing_scientist)
             existing_scientist.add_jeffrey_influencer(new_s)
         for existing_skeptic in self.skeptics:
-            new_s.skeptic_influencers.append(existing_skeptic)
+            new_s.add_jeffrey_influencer(existing_skeptic)
         scientists.append(new_s)
 
-    def _add_influencers_for_updater(self,
-                                     updater: JeffreyUpdater,
-                                     influencers: List[Scientist]):
+    def _add_all_influencers_for_updater(self,
+                                         updater: JeffreyUpdater,
+                                         influencers: List[Scientist]):
         for influencer in influencers:
             updater.add_jeffrey_influencer(influencer)
     

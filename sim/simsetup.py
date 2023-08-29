@@ -63,9 +63,9 @@ class ENSimSetup():
                     PriorSetup(confident_start_config=ConfidentStartConfig(1, CT)),
                     LifeCycleSetup(rounds_to_new_agent, uniform_priors),
                     SkepticalAgentsSetup()
-                    )   for pop in (20,) # 6, 10, 20, 50)
+                    )   for pop in (10, 20, 50,) # 6, 10, 20, 50)
                         for e in (0.05,) #0.01, 0.05, 0.1, 0.15
-                        for m in (2.5,) # 1, 1.1, 1.5, 2, 2.5)]
+                        for m in (0, 1, 1.1, 1.5, 2, 2.5, 3) # 1, 1.1, 1.5, 2, 2.5)]
                         for n in (5,) # 1, 5, 10, 20, 50, 100
                         for rounds in (1000,)
                         for rounds_to_new_agent in (10,)]
@@ -93,9 +93,9 @@ class ENSimSetup():
             raise ValueError("There needs to be at least one rng.")
         pool = Pool()
         #Commented code is for testing a single run with breakpoints
-        results_from_sims = [self.run_sim(rng_streams[0], params)]
-        # results_from_sims = pool.starmap(self.run_sim,
-        #                                 [(rng, params) for rng in rng_streams])
+        # results_from_sims = [self.run_sim(rng_streams[0], params)]
+        results_from_sims = pool.starmap(self.run_sim,
+                                        [(rng, params) for rng in rng_streams])
         pool.close()
         pool.join()
         if None in results_from_sims:

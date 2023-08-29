@@ -13,14 +13,10 @@ class EpistemicNetworkSimulation():
         self.params = params
         self._sim_round = 0
         self.results: Optional[ENSingleSimResults] = None
-
-        ## VARIOUS SCORING MECHANISMS
         self.max_obtainable_brier_penalty: float = 0
         # Tally the total obtainable brier penalties.
         # I.e. the penalty that would obtain if each round had a maximum
         # penalty
-        # It is equal to k * rounds
-
         self.brier_penalty_total: float = 0
         # Tally the total obtained brier penalties.
         # I.e. the sum of the obtained round penalties.
@@ -29,27 +25,6 @@ class EpistemicNetworkSimulation():
         self.non_skep_obtainable_brier_penalty: float = 0
         self.non_skep_brier_penalty_total: float = 0
         # Same as above, but excludes skeptics
-
-        ## The following stats are all only tracked for agents whose credence is 
-        # below .5 i.e. we want to measure the skeptic's influence on those taking 
-        # the uninformative action – we want to see whether the skeptic is helping
-        # pull them up.
-        self.skeptic_credence_influence: float = 0
-        # Credence that the skeptic moved
-        # through their influence, whichever direction.
-        self.skeptic_credence_directional_influence: float = 0
-        # + is good
-        # Credence moved in the positive direction (toward truth) minus
-        # credence moved in the negative direction on account of the skeptic's
-        # influence.
-
-        self.skeptic_brier_influence: float = 0
-        self.skeptic_total_brier_directional_influence: float = 0 # + is bad
-        self.br_ki: float = 0 
-        # Sum(skeptic round brier directional influence times no agents w. <.5 credence 
-        # for whom influence attempted)
-        self.k_skeptic_influenced: int = 0
-        # Sum(number of agents w. <.5 credence skeptic attempted to influence in round)
     
     def run_sim(self):
         for i in range(1, self.params.max_research_rounds + 1):
@@ -59,7 +34,6 @@ class EpistemicNetworkSimulation():
             if i == self.params.max_research_rounds:
                 if self.params.lifecyclesetup:
                     self.results = self._lifecycle_results(i)
-                    breakpoint()
                     break
 
                 # This should not typically be reached, but it is possible when running
@@ -99,16 +73,14 @@ class EpistemicNetworkSimulation():
         if self.params.lifecyclesetup:
             self._lifecycle_sim_action()
         elif self.params.stable_confidence_threshold:
-            self._static_sim_action(sim_round, self.params.stable_confidence_threshold)
+            self._stable_sim_action(sim_round, self.params.stable_confidence_threshold)
         else:
             raise NotImplementedError(
                 "Stable/non-lifecycle sims currently assume stable_confidence_threshold")
-        if self.params.skeptical_agents_setup:
-            self._save_skeptic_influence_stats()
 
     # This is used for simulating Zollman 2007, and for simulating O'Connor & Weatherall 2018
-    def _static_sim_action(self, sim_round: int, stable_confidence_threshold: float):
-        # We are in a config where network membership does not change. Check options for
+    def _stable_sim_action(self, sim_round: int, stable_confidence_threshold: float):
+        # We are in a config where we are looking for a stable outcome. Check options for
         # a stable outcome, one by one.
         # NOTE: No skeptics here. And no retired folk
         scientists = self.epistemic_network.scientists
@@ -145,25 +117,6 @@ class EpistemicNetworkSimulation():
         # is given by 1 * n (the maximum penalty from a single agent is 1)
         self.non_skep_obtainable_brier_penalty += len(en.scientists)
         # Same for non-skeptics only
-    
-    def _save_skeptic_influence_stats(self):
-        scientists = self.epistemic_network.scientists
-        self.skeptic_credence_influence += sum(
-            [a.skeptic_credence_influence for a in scientists])
-        self.skeptic_credence_directional_influence += sum(
-            [a.skeptic_credence_directional_influence for a in scientists])
-        self.skeptic_brier_influence += sum(
-            [a.skeptic_brier_influence for a in scientists])
-        round_k = sum(
-            [1 for s in scientists if s.below_min_and_skeptic_attempted_influence])
-        round_br_dir_inf = sum(
-            [a.skeptic_brier_directional_influence for a in scientists])
-        self.skeptic_total_brier_directional_influence += round_br_dir_inf
-        self.k_skeptic_influenced += round_k
-        self.br_ki += round_br_dir_inf * round_k
-    
-    def _skeptic_av_brier_directional_influence(self, br_ki: float, ki: float) -> float:
-        return br_ki / ki
 
     def _stable_polarization(self, scientists: list[Scientist], confidence_threshold: float) -> bool:
         credences = np.array([s.credence for s in scientists])
@@ -249,33 +202,6 @@ class EpistemicNetworkSimulation():
         nsbr = self._non_skeptic_brier_ratio() if self.params.skeptical_agents_setup else None
         av_retired_brier_penalty = self._mean_brier_score([s.credence for s in retired])
         retired_confidently = self._prop_truth_confidently(retired)
-
-        print(f"skeptic_credence_influence: {self.skeptic_credence_influence}")
-        print(f"skeptic_credence_directional_influence: {self.skeptic_credence_directional_influence}")
-        print(f"skeptic_brier_influence: {self.skeptic_brier_influence}")
-        print(f"skeptic_total_brier_directional_influence: {self.skeptic_total_brier_directional_influence}")
-        print(f"Skeptic influenced agent-rounds: {self.k_skeptic_influenced}")
-        # Keep in mind k is agent-rounds, not agents
-        print()
-
-        skeptic_av_credence_influence = self.skeptic_credence_influence \
-            / self.k_skeptic_influenced
-        print(f"skeptic_av_credence_influence: {skeptic_av_credence_influence}")
-        skeptic_av_credence_directional_influence = self.skeptic_credence_directional_influence \
-            / self.k_skeptic_influenced
-        print(f"skeptic_av_credence_directional_influence: {skeptic_av_credence_directional_influence}")
-        skeptic_av_brier_influence = self.skeptic_brier_influence \
-            / self.k_skeptic_influenced
-        print(f"skeptic_av_brier_influence: {skeptic_av_brier_influence}")
-        skeptic_av_brier_directional_influence = self.skeptic_total_brier_directional_influence \
-            / self.k_skeptic_influenced
-        print(f"skeptic_av_brier_directional_influence calc 1: {skeptic_av_brier_directional_influence}")
-        print(f"skeptic_av_brier_directional_influence calc 2: {self._skeptic_av_brier_directional_influence(self.br_ki, self.k_skeptic_influenced)}")
-        agents = retired + working
-        av_skeptic_lifetime_brier_directional_influence = float(np.mean([
-            a.skeptic_lifetime_brier_directional_influence for a in agents if a.skeptic_lifetime_brier_directional_influence is not None]))
-        print(f"av_skeptic_lifetime_brier_directional_influence: {av_skeptic_lifetime_brier_directional_influence}")
-        breakpoint()
         return ENSingleSimResults(
             sim_brier_penalty_total=self.brier_penalty_total,
             sim_brier_penalty_ratio=self._brier_ratio(),
@@ -283,12 +209,7 @@ class EpistemicNetworkSimulation():
             av_retired_brier_penalty=av_retired_brier_penalty,
             prop_retired_confident=retired_confidently,
             unstable_conclusion_round=sim_round,
-            skeptic_credence_influence=self.skeptic_credence_influence,
-            skeptic_credence_directional_influence=self.skeptic_credence_directional_influence,
-            skeptic_brier_influence=self.skeptic_brier_influence,
-            skeptic_total_brier_directional_influence=self.skeptic_total_brier_directional_influence,
-            skeptic_av_brier_directional_influence=self._skeptic_av_brier_directional_influence(self.br_ki, self.k_skeptic_influenced),
-            n_all_agents=len(working + retired),)
+            n_all_agents=len(working + retired))
     
     def _stability_not_reached_results(self, sim_round: int) -> ENSingleSimResults:
         """ Unstable results for a sim that would typically be expected to reach
