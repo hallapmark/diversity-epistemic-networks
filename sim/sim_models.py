@@ -103,6 +103,20 @@ class ENSingleSimResults(NamedTuple):
     # This happens rarely in practice, but can happen if the number of
     # rounds is small.
 
+    ## SKEPTIC'S INFLUENCE MEASURED
+    skeptic_credence_influence: Optional[float] = None
+    # Credence that the skeptic moved
+    # through their influence, whichever direction.
+    skeptic_credence_directional_influence: Optional[float] = None
+    # + is good
+    # Credence moved in the positive direction (toward truth) minus
+    # credence moved in the negative direction on account of the skeptic's
+    # influence.
+
+    skeptic_brier_influence: Optional[float] = None
+    skeptic_total_brier_directional_influence: Optional[float] = None # + is bad
+    skeptic_av_brier_directional_influence: Optional[float] = None
+
     ## OTHER
     n_all_agents: Optional[float] = None
     # How many agents were in the network over all time (how many were touched
