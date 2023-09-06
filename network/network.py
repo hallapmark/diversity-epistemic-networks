@@ -22,11 +22,13 @@ class ENetwork():
             params.epsilon,
             params.low_stop,
             prior,
-            params.m
-            ) for prior in priors]
+            params.m,
+            id_code
+            ) for id_code, prior in enumerate(priors)]
         if not len(self.scientists) == params.scientist_init_popcount:
             raise ValueError(
                 "Something went wrong. !(len(self.scientists) == scientist_popcount)")
+        self.used_ids = len(self.scientists) - 1
         self.skeptics: list[Scientist] = []
         if params.skeptical_agents_setup:
             if params.stable_confidence_threshold:
@@ -39,7 +41,9 @@ class ENetwork():
                                                params.epsilon,
                                                params.low_stop,
                                                prior,
-                                               params.m))
+                                               params.m,
+                                               self.used_ids + 1))
+                self.used_ids += 1
         # We keep the total network size the same if skeptics are present
         for _ in range(len(self.skeptics)):
             indices: np.ndarray = np.arange(len(self.scientists))
@@ -54,6 +58,8 @@ class ENetwork():
     def _structure_scientific_network(self,
                                       scientists: List[Scientist],
                                       network_type: ENetworkType):
+        for s in scientists:
+            s.jeffrey_influencers = []
         match network_type:
             case ENetworkType.COMPLETE:
                 for scientist in scientists:
@@ -68,9 +74,9 @@ class ENetwork():
 
     ## Interface
     def enetwork_play_round(self, lifecycle_sim: bool = False):
+        self._standard_round_actions()
         if lifecycle_sim:
             self._lifecycle_round_actions()
-        self._standard_round_actions()
         self._rounds_played += 1
 
     ## Private methods
@@ -100,6 +106,7 @@ class ENetwork():
         if not self._rounds_played % self.params.lifecyclesetup.rounds_to_new_agent == 0:
             return
         self._admissions(self._retire())
+        self._structure_scientific_network(self.scientists, self.params.network_type)
         # Idea for future:
         # Conversion from incentive structure
         # if approx_consensus_reached:
@@ -115,21 +122,23 @@ class ENetwork():
         """
         Retire an agent. Returns a RetireResponse.
         """
-        scientists = self.scientists
-        working_scientists = scientists + self.skeptics
+        working_scientists = self.scientists + self.skeptics
         # Do not retire if no experienced scientist is found
         experienced_scientists = [s for s in working_scientists if s.rounds_of_experience >= 20]
         if not experienced_scientists:
             return RetireResponse(agent_retired=False, skeptic_retired=False)
         indices: np.ndarray = np.arange(len(experienced_scientists))
-        s: Scientist = experienced_scientists[self.rng.choice(indices)]
-        self.retired.append(s)
-        if s in self.scientists:
-            self.scientists.remove(s)
-            return RetireResponse(agent_retired=True, skeptic_retired=False)
-        if s in self.skeptics:
-            self.skeptics.remove(s)
-            return RetireResponse(agent_retired=True, skeptic_retired=True)
+        retiree: Scientist = experienced_scientists[self.rng.choice(indices)]
+        self.retired.append(retiree)
+        retiree.round_binomial_experiment = None
+        for scientist in self.scientists:
+            if retiree.id_code == scientist.id_code:
+                self.scientists.remove(scientist)
+                return RetireResponse(agent_retired=True, skeptic_retired=False)
+        for skeptic in self.skeptics:
+            if retiree.id_code == skeptic.id_code:
+                self.skeptics.remove(skeptic)
+                return RetireResponse(agent_retired=True, skeptic_retired=True)
         raise NotImplementedError("We can only retire scientists and skeptics.")
     
     def _admissions(self, retire_response: RetireResponse):
@@ -153,10 +162,10 @@ class ENetwork():
                                 params.epsilon,
                                 params.low_stop,
                                 prior,
-                                params.m)
+                                params.m,
+                                self.used_ids + 1)
+            self.used_ids += 1
             self.skeptics.append(skeptic)
-            for existing_scientist in scientists:
-                existing_scientist.add_jeffrey_influencer(skeptic)
             return
         # A regular agent retired – replace with regular agent.
         cr = params.lifecyclesetup.admissions_priors_func(1, self.rng, params.priorsetup)[0]
@@ -166,13 +175,10 @@ class ENetwork():
                           self.params.low_stop,
                           cr,
                           self.params.m,
-                          True)
-        for existing_scientist in scientists:
-            new_s.add_jeffrey_influencer(existing_scientist)
-            existing_scientist.add_jeffrey_influencer(new_s)
-        for existing_skeptic in self.skeptics:
-            new_s.add_jeffrey_influencer(existing_skeptic)
-        scientists.append(new_s)
+                          self.used_ids + 1)
+        self.used_ids += 1
+        index = self.rng.choice(np.arange(len(self.scientists) + 1))
+        scientists.insert(index, new_s)
 
     def _add_all_influencers_for_updater(self,
                                          updater: JeffreyUpdater,

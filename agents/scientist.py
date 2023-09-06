@@ -15,7 +15,7 @@ class Scientist(JeffreyUpdater, CredenceBasedSupervisor, BinomialExperimenter):
                  low_stop: float,
                  prior: float,
                  m: float,
-                 latecomer: bool = False):
+                 id_code: int):
         super().__init__(epsilon = epsilon,
                          m = m,
                          prior = prior,
@@ -25,7 +25,7 @@ class Scientist(JeffreyUpdater, CredenceBasedSupervisor, BinomialExperimenter):
         self.previous_binomial_experiment: Optional[BinomialExperiment] = None
         self.round_binomial_experiment: Optional[BinomialExperiment] = None
         self.rounds_of_experience = 0
-        self.latecomer = latecomer
+        self.id_code = id_code
     
     def __str__(self):
         k = self.previous_binomial_experiment.k if self.previous_binomial_experiment else 'N/A'

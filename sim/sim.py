@@ -42,33 +42,10 @@ class EpistemicNetworkSimulation():
                 break
 
     def _sim_action(self, sim_round: int):
-        # if sim_round % 500 == 0:
-        #     print(f"A sim has reached round {sim_round}")
-        #     for scientist in self.epistemic_network.scientists:
-        #         print(scientist)
-        #     print("Skeptic:")
-        #     for scientist in self.epistemic_network.skeptics:
-        #         print(scientist)
         if self.results:
             return
         self._sim_round = sim_round
         self._save_brier_stats()
-        # We save the brier penalty even before the first round action.
-        # If the game ends at round 1 in a stable sim because everyone
-        # came in with such low credences that nobody ever takes the
-        # informative action, then we can still calculate a brier score.
-        # It will be the total brier score of the agents as they came in.
-        # This enables us to penalize networks that
-        # fail to transform a mass of agents with low credences.
-        # The alternative conceptualization would be that such networks
-        # simply fail to apply to these sets of agents.
-        # But this would lead to the following counterintuitive result:
-        # we could in principle have two configurations such
-        # that: say, over 10 simulations, one config gets an average total
-        # score of 50. The other configuration also gets a score of 50 but
-        # over 8 simulations: two simulation's brier penalty would be
-        # N/A because the agents immediately exited the game. But the
-        # populations of the latter configuration would still be worse off.
 
         if self.params.lifecyclesetup:
             self._lifecycle_sim_action()
