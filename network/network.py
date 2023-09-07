@@ -63,8 +63,13 @@ class ENetwork():
         match network_type:
             case ENetworkType.COMPLETE:
                 for scientist in scientists:
-                    self._add_all_influencers_for_updater(scientist, scientists + self.skeptics)
-
+                    influencers = scientists + self.skeptics
+                    indices = np.arange(len(influencers))
+                    self.rng.shuffle(indices)
+                    shuffled_influencers: list[Scientist] = []
+                    for i in indices:
+                        shuffled_influencers.append(influencers[i])
+                    self._add_all_influencers_for_updater(scientist, shuffled_influencers)
             case ENetworkType.CYCLE:
                 for i, scientist in enumerate(scientists):
                     # NOTE: Skeptics are unsupported for the cycle network
