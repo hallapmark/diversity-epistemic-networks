@@ -27,7 +27,6 @@ class ENParams(NamedTuple):
     network_type: ENetworkType # Controls connectedness of network
     n_per_round: int # How many experiments, or 'coin flips', per round an agent will conduct
     epsilon: float # How much better theory B is in fact. pB = 0.5 + epsilon. pA = 0.5
-    low_stop: float # The cr. threshold at which the informative action will no longer be taken
     max_research_rounds: int # When we terminate the simulation, if it has not already stopped
     stable_confidence_threshold: Optional[float]
     # For simulations where we presume a stable outcome, what level of confidence is required

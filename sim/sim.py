@@ -63,7 +63,7 @@ class EpistemicNetworkSimulation():
         scientists = self.epistemic_network.scientists
         credences = np.array([s.credence for s in scientists])
         # low-stops AT 0.5
-        if all(credences <= self.params.low_stop):
+        if all(credences <= .5):
             # Everyone's credence in B is at or below 0.5. Abandon further research
             self.results = self._abandoned_research_results(sim_round)
             return
@@ -99,7 +99,7 @@ class EpistemicNetworkSimulation():
         credences = np.array([s.credence for s in scientists])
         if all(credences > confidence_threshold):
             return False
-        if all(credences <= self.params.low_stop):
+        if all(credences <= .5):
             return False
         
         # We return True by default. The loop finds conditions under
@@ -112,7 +112,7 @@ class EpistemicNetworkSimulation():
         for scientist in scientists:
             if scientist.credence > confidence_threshold:
                 continue
-            if scientist.low_stop < scientist.credence <= confidence_threshold:
+            if .5 < scientist.credence <= confidence_threshold:
                 # Someone is taking the informative action and is not yet at 0.99. Network not
                 # stable
                 return False

@@ -19,7 +19,6 @@ class ENetwork():
             rng,
             params.n_per_round,
             params.epsilon,
-            params.low_stop,
             prior,
             params.m,
             id_code
@@ -38,7 +37,6 @@ class ENetwork():
                 self.skeptics.append(Scientist(rng,
                                                params.n_per_round,
                                                params.epsilon,
-                                               params.low_stop,
                                                prior,
                                                params.m,
                                                self.used_ids + 1))
@@ -86,13 +84,12 @@ class ENetwork():
     ## Private methods
     def _standard_round_actions(self):
         for scientist in self.scientists + self.skeptics:
+            scientist.round_binomial_experiment = None # reset to None before new round starts
             # Whether 'tis nobler to experiment
             scientist.decide_round_research_action()
         for scientist in self.scientists:
             scientist.jeffrey_update_credence()
         for scientist in self.scientists + self.skeptics:
-            scientist.previous_binomial_experiment = scientist.round_binomial_experiment
-            scientist.round_binomial_experiment = None
             scientist.rounds_of_experience += 1
 
     def _lifecycle_round_actions(self):
@@ -164,7 +161,6 @@ class ENetwork():
             skeptic = Scientist(self.rng,
                                 params.n_per_round,
                                 params.epsilon,
-                                params.low_stop,
                                 prior,
                                 params.m,
                                 self.used_ids + 1)
@@ -176,7 +172,6 @@ class ENetwork():
         new_s = Scientist(self.rng,
                           self.params.n_per_round,
                           self.params.epsilon,
-                          self.params.low_stop,
                           cr,
                           self.params.m,
                           self.used_ids + 1)

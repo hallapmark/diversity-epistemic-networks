@@ -31,14 +31,14 @@ class ENSimSetup():
         match self.sim_type:
             # A reproduction of Zollman 2007, https://philpapers.org/rec/ZOLTCS
             case ENSimType.ZOLLMAN_COMPLETE:
-                configs = [ENParams(pop, ENetworkType.COMPLETE, 1000, 0.001, 0.5, 3000, 0.99, 0) for pop in range(4, 12)]
+                configs = [ENParams(pop, ENetworkType.COMPLETE, 1000, 0.001, 3000, 0.99, 0) for pop in range(4, 12)]
                 self.run_configs(configs, "zollman2007.csv")
             case ENSimType.ZOLLMAN_CYCLE:
-                configs = [ENParams(pop, ENetworkType.CYCLE, 1000, 0.001, 0.5, 3000, 0.99, 0) for pop in range(4, 12)]
+                configs = [ENParams(pop, ENetworkType.CYCLE, 1000, 0.001, 3000, 0.99, 0) for pop in range(4, 12)]
                 self.run_configs(configs, "zollman2007.csv")
             # A reproduction of O'Connor & Weatherall 2018, https://philpapers.org/rec/OCOSP
             case ENSimType.POLARIZATION: 
-                configs = [ENParams(pop, ENetworkType.COMPLETE, n, e, 0.5, 10000, 0.99, m) for pop in (6, 10, 20) # 2, 6, 10, 20
+                configs = [ENParams(pop, ENetworkType.COMPLETE, n, e, 10000, 0.99, m) for pop in (6, 10, 20) # 2, 6, 10, 20
                                                                                                 for e in (0.2,) # 0.01, 0.05, 0.1, 0.15, 0.2
                                                                                                 for m in np.arange(1.0, 3.1, 0.1).tolist() 
                                                                                                 for n in (50,)] # 1, 5, 10, 20, 50, 100
@@ -46,7 +46,7 @@ class ENSimSetup():
             case ENSimType.LIFECYCLE:
                 CT = 0.99
                 configs = [ENParams(
-                    pop, ENetworkType.COMPLETE, n, e, 0.5, rounds, None, m, confident_priors,
+                    pop, ENetworkType.COMPLETE, n, e, rounds, None, m, confident_priors,
                     PriorSetup(confident_start_config=ConfidentStartConfig(1, CT)),
                     LifeCycleSetup(rounds_to_new_agent, uniform_priors)
                     )   for pop in (10, 20, 50) # 10, 20, 50)
@@ -59,7 +59,7 @@ class ENSimSetup():
             case ENSimType.LIFECYCLE_W_SKEPTICS:
                 CT = 0.99
                 configs = [ENParams(
-                    pop, ENetworkType.COMPLETE, n, e, 0.5, rounds, None, m, confident_priors,
+                    pop, ENetworkType.COMPLETE, n, e, rounds, None, m, confident_priors,
                     PriorSetup(confident_start_config=ConfidentStartConfig(1, CT)),
                     LifeCycleSetup(rounds_to_new_agent, uniform_priors),
                     SkepticalAgentsSetup()
