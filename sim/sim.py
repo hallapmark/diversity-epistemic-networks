@@ -1,5 +1,5 @@
-from agents.scientist import Scientist
-from network.network import ENetwork
+from sim.scientist import Scientist
+from sim.network import ENetwork
 import numpy as np
 from typing import Optional
 from sim.sim_models import ENParams, ENSingleSimResults

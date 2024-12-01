@@ -1,37 +1,74 @@
-from agents.abstractagents.doxasticagent import DoxasticAgent
-from agents.experimenters.binomialexperimenter import BinomialExperimenter
+from __future__ import annotations
+import numpy as np
+from sim.experimentgen import BinomialExperiment, ExperimentGen
+from typing import Optional
 
-# Following Zollman (2007) and Weatherall, O'Connor and Bruner (2018), this
-# implementation assumes that there are only two competing hypotheses/possible worlds:
-# H := p = 0.5 + epsilon and not-H := p = 0.5 - epsilon where p is the probability that
-# a binary event happens. There is alternative literature that
-# works with a full distribution of hypotheses (see also beta distribution, and Zollman 2010.)
+""" A scientist who runs experiments on a binomial distribution, and who stops 
+experimenting when credence is below a certain threshold."""
+class Scientist(): 
+    def __init__(self, 
+                 rng: np.random.Generator, 
+                 n_per_round: int, 
+                 epsilon: float, 
+                 low_stop: float,
+                 prior: float,
+                 m: float,
+                 id_code: int):
+        self.n_per_round = n_per_round
+        self.binomial_experiment_gen = ExperimentGen(rng)
+        self.previous_binomial_experiment: Optional[BinomialExperiment] = None
+        self.round_binomial_experiment: Optional[BinomialExperiment] = None
+        self.rounds_of_experience = 0
+        self.id_code = id_code
 
-""" A Jeffrey updater who knows how to update on binomial distributions."""
-class JeffreyUpdater(DoxasticAgent):
-    # If m == 0, this is the same as a Bayesian updater
-    def __init__(self, epsilon: float, m: float, **kw):
-        super().__init__(**kw)
+        self.credence = prior
         self.epsilon = epsilon # How much better theory B is. p = 0.5 + epsilon
         # Influencers can include self
         self.m = m
-        self.jeffrey_influencers: list[BinomialExperimenter] = []
+
+        self.influencers: list[Scientist] = []
+
+        self.low_stop = low_stop
+    
+    def __str__(self):
+        k = self.previous_binomial_experiment.k if self.previous_binomial_experiment else 'N/A'
+        n = self.previous_binomial_experiment.n if self.previous_binomial_experiment else 'N/A'
+        return f"credence = {round(self.credence, 3)}, k = {k}, n = {n}"
+
+    def get_experiment_data(self) -> Optional[BinomialExperiment]:
+        return self.round_binomial_experiment
+    
+    def decide_round_research_action(self):
+        if self.credence < self.low_stop:
+            self._stop_action()
+        else:
+            self._continue_action()
+    
+    # CredenceBasedSupervisor mandatory method implementations
+    def _stop_action(self):
+        self.round_binomial_experiment = None
+    
+    def _continue_action(self):
+        self._experiment(self.n_per_round, self.epsilon)
         
-    def add_jeffrey_influencer(self, influencer: BinomialExperimenter):
-        self.jeffrey_influencers.append(influencer)
+    def _experiment(self, n: int, epsilon):
+        self.round_binomial_experiment = self.binomial_experiment_gen.experiment(n, epsilon)
+
+    def add_jeffrey_influencer(self, influencer: Scientist):
+        self.influencers.append(influencer)
 
     # Public interface
     # Superclass mandatory method implementation
     def jeffrey_update_credence(self):
-        for influencer in self.jeffrey_influencers:
+        for influencer in self.influencers:
             self._jeffrey_update_credence_on_influencer(influencer)
 
-    def dm(self, influencer: BinomialExperimenter) -> float:
+    def dm(self, influencer: Scientist) -> float:
         d = abs(self.credence - influencer.credence)
         return d * self.m
 
     # Private methods
-    def _jeffrey_update_credence_on_influencer(self, influencer: BinomialExperimenter): 
+    def _jeffrey_update_credence_on_influencer(self, influencer: Scientist): 
         exp = influencer.get_experiment_data()
         if exp:
             k = exp.k
@@ -67,25 +104,14 @@ class JeffreyUpdater(DoxasticAgent):
                              p_E_nH: float) -> float:
         return prior * p_E_H + (1 - prior) * p_E_nH
 
-
-    # P(E|H)
-    def _likelihood(self, k, n, p, factorial_func) -> float:
-        """ Use the full likelihood formula if you are either ignoring the denominator
-        in Bayes' theorem or if you need to calculate P(E|H) independently for some
-        reason. Otherwise, use the truncated likelihood function."""
-        f = factorial_func
-        return f(n) / (f(k) * f(n-k)) * p ** k * (1 - p) ** (n - k)
-
     # P(E|H) when some terms cancel out in the denominator and numerator of Bayes' theorem
     def _truncated_likelihood(self, k: int, n: int, p: float) -> float:
-        """ Use this only if you are calculating the posterior, i.e. you are
-        not ignoring the denominator. You can use the fact that some terms cancel
-        out from the denominator and numerator to simplify the likelihood formula."""
-        # Note: This simplifies even further in Bayes' theorem. But we can use this function
-        # in Jeffrey updating.
+        """ Calculate likelihood using a simplified formula (some terms cancel out from the 
+        denominator and numerator)."""
         return p ** k * (1 - p) ** (n - k)
 
     def truncated_p_E_nH(self, k: int, n: int, p: float) -> float:
         """ Calculate P(E|~H) for the binomial distribution when there are only two possible
         parameter values/two possible worlds: p and 1-p."""
         return (1-p) ** k * p ** (n - k)
+    

@@ -1,5 +1,4 @@
-from agents.scientist import Scientist
-from agents.updaters.jeffreyupdater import JeffreyUpdater
+from sim.scientist import Scientist
 from sim.sim_models import *
 import numpy as np
 from typing import List
@@ -59,7 +58,7 @@ class ENetwork():
                                       scientists: List[Scientist],
                                       network_type: ENetworkType):
         for s in scientists:
-            s.jeffrey_influencers = []
+            s.influencers = []
         match network_type:
             case ENetworkType.COMPLETE:
                 for scientist in scientists:
@@ -186,13 +185,13 @@ class ENetwork():
         scientists.insert(index, new_s)
 
     def _add_all_influencers_for_updater(self,
-                                         updater: JeffreyUpdater,
+                                         updater: Scientist,
                                          influencers: List[Scientist]):
         for influencer in influencers:
             updater.add_jeffrey_influencer(influencer)
     
     def _add_cycle_influencers_for_updater(self,
-                                           updater: JeffreyUpdater,
+                                           updater: Scientist,
                                            i: int,
                                            influencers: List[Scientist]):
         updater.add_jeffrey_influencer(influencers[i-1])
