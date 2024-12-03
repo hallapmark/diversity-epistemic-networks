@@ -50,12 +50,11 @@ class ENetwork():
             self._add_all_influencers_for_updater(scientist, shuffled_influencers)
 
     ## Interface
-    def enetwork_play_round(self, lifecycle_sim: bool = False):
+    def enetwork_play_round(self):
         self._standard_round_actions()
-        if lifecycle_sim:
-            self._lifecycle_round_actions()
+        self._lifecycle_round_actions()
         self._rounds_played += 1
-
+        
     ## Private methods
     def _standard_round_actions(self):
         for scientist in self.scientists:

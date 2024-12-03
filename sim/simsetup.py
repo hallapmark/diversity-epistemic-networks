@@ -89,6 +89,6 @@ class ENSimSetup():
                 rng: np.random.Generator,
                 params: ENParams) -> Optional[ENSingleSimResults]:
         network = ENetwork(rng, params)
-        simulation = EpistemicNetworkSimulation(network, params)
+        simulation = ENSimulation(network, params)
         simulation.run_sim()
         return simulation.results
