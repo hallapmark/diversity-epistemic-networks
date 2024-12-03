@@ -26,8 +26,8 @@ class ENSimulation():
         if self.results:
             return
         self._sim_round = sim_round
-        self.metrics.update_brier_stats(self)
         self.epistemic_network.enetwork_play_round()
+        self.metrics.update_brier_stats(self)
     
     def _lifecycle_results(self, sim_round: int) -> ENSingleSimResults:
         en = self.epistemic_network
