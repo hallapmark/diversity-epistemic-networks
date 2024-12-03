@@ -1,8 +1,7 @@
 # diversity-epistemic-networks
-WIP. 
 Python code for modelling the effects of diversity in epistemic networks
 
-This project requires Python 3.11.
+This project requires Python 3.12.
 
 # Installation
 (1) clone this repository
@@ -20,6 +19,4 @@ If you want to run the lifecycle simulations, do
 conda activate epistemic-networks
 python diversity.py
 ```
-
-In addition, `zollman.py` reproduces results from Zollman 2007, and `polarization.py` reproduces some results from O'Connor and Weatherall 2018.
 

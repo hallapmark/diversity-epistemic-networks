@@ -7,7 +7,7 @@ from sim.priors_func import *
 class LifeCycleSetup(NamedTuple):
     rounds_to_new_agent: int
     # A new agent will appear and an existing agent will retire every x rounds
-    admissions_priors_func: Priors_Func = low_priors
+    admissions_priors_func: Priors_Func = uniform_priors
     # This is the prior distribution for newly admitted agents
     # The initial population is configured separately, see below
 
@@ -16,15 +16,11 @@ class ENParams(NamedTuple):
     n_per_round: int # How many experiments, or 'coin flips', per round an agent will conduct
     epsilon: float # How much better theory B is in fact. pB = 0.5 + epsilon. pA = 0.5
     max_research_rounds: int # When we terminate the simulation, if it has not already stopped
-    m: float
-    lifecyclesetup: LifeCycleSetup
-    # m: how distrustful agents are of others' evidence (larger m means more distrustful)
+    m: float # how distrustful agents are of others' evidence (larger m means more distrustful)
     # See O'Connor and Weatherall 2018, Scientific Polarization
-    priors_func: Priors_Func = uniform_priors
+    lifecyclesetup: LifeCycleSetup
+    priors_func: Priors_Func
     # Controls priors distribution for the initial network
-    priorsetup: PriorSetup = PriorSetup()
-    # Additional settings for the prior distribution that get passed to the priors func
-    # Setup for lifecycle networks with admissions and retirings
     skeptic_n: int = 0
 
 ## RESULTS

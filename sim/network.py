@@ -9,7 +9,7 @@ class ENetwork():
                  params: ENParams):
         self.rng = rng
         self.params = params
-        priors = params.priors_func(params.scientist_init_popcount, rng, params.priorsetup)
+        priors = params.priors_func(params.scientist_init_popcount, rng)
         self._rounds_played = 0
         self.scientists = [Scientist(
             rng,
@@ -86,7 +86,7 @@ class ENetwork():
         if retiree.is_skeptic:
             prior = .5
         else:
-            prior = params.lifecyclesetup.admissions_priors_func(1, self.rng, params.priorsetup)[0]
+            prior = params.lifecyclesetup.admissions_priors_func(1, self.rng)[0]
         # re-initialize retiree to new agent
         self.retiree_credences.append(retiree.credence)
         retiree.__init__(self.rng, params.n_per_round, params.epsilon, prior, params.m, retiree.is_skeptic)

@@ -27,12 +27,10 @@ class ENSimSetup():
             raise ValueError("Quick setup can only be called if you have specified ENSimType")
         match self.sim_type:
             case ENSimType.LIFECYCLE:
-                CT = 0.99
                 configs = [ENParams(
                     pop, n, e, rounds, m, 
                     LifeCycleSetup(rounds_to_new_agent, uniform_priors), 
-                    confident_priors,
-                    PriorSetup(confident_start_config=ConfidentStartConfig(1, CT)),
+                    confident_priors
                     )   for pop in (10, 20, 50,) # 10, 20, 50)
                         for e in (0.01, 0.05, 0.1,) # 0.01, 0.05, 0.1
                         for m in (1.1, 1.5, 2, 2.5, 3) # 0, 1, 1.1, 1.5, 2, 2.5, 3
@@ -41,12 +39,10 @@ class ENSimSetup():
                         for rounds_to_new_agent in (10,)]
                 self.run_configs(configs, "lifecycle_effect_of_m_1000r.csv")
             case ENSimType.LIFECYCLE_W_SKEPTICS:
-                CT = 0.99
                 configs = [ENParams(
                     pop, n, e, rounds, m, 
                     LifeCycleSetup(rounds_to_new_agent, uniform_priors),
-                    confident_priors,
-                    PriorSetup(confident_start_config=ConfidentStartConfig(1, CT)),
+                    confident_priors, 
                     1
                     )   for pop in (10,)
                         for e in (0.05,)
