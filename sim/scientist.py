@@ -14,12 +14,12 @@ class Scientist():
                  epsilon: float, 
                  prior: float,
                  m: float,
-                 id_code: int):
+                 is_skeptic: bool):
         self.n_per_round = n_per_round
         self.binomial_experiment_gen = ExperimentGen(rng)
         self.round_binomial_experiment: Optional[BinomialExperiment] = None
         self.rounds_of_experience = 0
-        self.id_code = id_code
+        self.is_skeptic = is_skeptic
 
         self.credence = prior
         self.epsilon = epsilon # How much better theory B is. p = 0.5 + epsilon
@@ -47,6 +47,8 @@ class Scientist():
         self.influencers.append(influencer)
 
     def jeffrey_update_credence(self):
+        if self.is_skeptic:
+            return
         for influencer in self.influencers:
             self._jeffrey_update_credence_on_influencer(influencer)
 

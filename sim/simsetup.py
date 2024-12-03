@@ -9,9 +9,6 @@ from typing import Optional, List
 from enum import Enum, auto
 
 class ENSimType(Enum):
-    ZOLLMAN_COMPLETE = auto()
-    ZOLLMAN_CYCLE = auto()
-    POLARIZATION = auto()
     LIFECYCLE = auto()
     LIFECYCLE_W_SKEPTICS = auto()
 
@@ -29,29 +26,16 @@ class ENSimSetup():
         if not self.sim_type:
             raise ValueError("Quick setup can only be called if you have specified ENSimType")
         match self.sim_type:
-            # A reproduction of Zollman 2007, https://philpapers.org/rec/ZOLTCS
-            case ENSimType.ZOLLMAN_COMPLETE:
-                configs = [ENParams(pop, ENetworkType.COMPLETE, 1000, 0.001, 3000, 0.99, 0) for pop in range(4, 12)]
-                self.run_configs(configs, "zollman2007.csv")
-            case ENSimType.ZOLLMAN_CYCLE:
-                configs = [ENParams(pop, ENetworkType.CYCLE, 1000, 0.001, 3000, 0.99, 0) for pop in range(4, 12)]
-                self.run_configs(configs, "zollman2007.csv")
-            # A reproduction of O'Connor & Weatherall 2018, https://philpapers.org/rec/OCOSP
-            case ENSimType.POLARIZATION: 
-                configs = [ENParams(pop, ENetworkType.COMPLETE, n, e, 10000, 0.99, m) for pop in (6, 10, 20) # 2, 6, 10, 20
-                                                                                                for e in (0.2,) # 0.01, 0.05, 0.1, 0.15, 0.2
-                                                                                                for m in np.arange(1.0, 3.1, 0.1).tolist() 
-                                                                                                for n in (50,)] # 1, 5, 10, 20, 50, 100
-                self.run_configs(configs, "oconnor2018.csv")
             case ENSimType.LIFECYCLE:
                 CT = 0.99
                 configs = [ENParams(
-                    pop, ENetworkType.COMPLETE, n, e, rounds, None, m, confident_priors,
+                    pop, n, e, rounds, m, 
+                    LifeCycleSetup(rounds_to_new_agent, uniform_priors), 
+                    confident_priors,
                     PriorSetup(confident_start_config=ConfidentStartConfig(1, CT)),
-                    LifeCycleSetup(rounds_to_new_agent, uniform_priors)
-                    )   for pop in (10, 20, 50) # 10, 20, 50)
-                        for e in (0.01, 0.05, 0.1) # 0.01, 0.05, 0.1
-                        for m in (0, 1, 1.1, 1.5, 2, 2.5, 3) # 0, 1, 1.1, 1.5, 2, 2.5, 3
+                    )   for pop in (10, 20, 50,) # 10, 20, 50)
+                        for e in (0.01, 0.05, 0.1,) # 0.01, 0.05, 0.1
+                        for m in (1.1, 1.5, 2, 2.5, 3) # 0, 1, 1.1, 1.5, 2, 2.5, 3
                         for n in (5,)
                         for rounds in (1000,)
                         for rounds_to_new_agent in (10,)]
@@ -59,12 +43,13 @@ class ENSimSetup():
             case ENSimType.LIFECYCLE_W_SKEPTICS:
                 CT = 0.99
                 configs = [ENParams(
-                    pop, ENetworkType.COMPLETE, n, e, rounds, None, m, confident_priors,
-                    PriorSetup(confident_start_config=ConfidentStartConfig(1, CT)),
+                    pop, n, e, rounds, m, 
                     LifeCycleSetup(rounds_to_new_agent, uniform_priors),
-                    SkepticalAgentsSetup()
-                    )   for pop in (10, 20, 50)
-                        for e in (0.01, 0.05, 0.1)
+                    confident_priors,
+                    PriorSetup(confident_start_config=ConfidentStartConfig(1, CT)),
+                    1
+                    )   for pop in (10,)
+                        for e in (0.05,)
                         for m in (0, 1, 1.1, 1.5, 2, 2.5, 3)
                         for n in (5,)
                         for rounds in (1000,)
@@ -92,12 +77,12 @@ class ENSimSetup():
         if not rng_streams:
             raise ValueError("There needs to be at least one rng.")
         pool = Pool()
-        #Commented code is for testing a single run with breakpoints
-        # results_from_sims = [self.run_sim(rng_streams[0], params)]
         results_from_sims = pool.starmap(self.run_sim,
                                         [(rng, params) for rng in rng_streams])
         pool.close()
         pool.join()
+        #Commented code is for testing a single run with breakpoints
+        # results_from_sims = [self.run_sim(rng_streams[0], params)]
         if None in results_from_sims:
             raise Warning("Failed to get results from at least one simulation.")
         results: list[ENSingleSimResults] = [r for r in results_from_sims if r is not None]

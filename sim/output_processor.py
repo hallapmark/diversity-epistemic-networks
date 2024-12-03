@@ -7,12 +7,7 @@ from sim.sim_models import *
 
 
 class OutputProcessor():
-    def process_sims_results(self, results: list[ENSingleSimResults], params: ENParams) -> ENLifecycleResultsSummary | ENResultsSummary:
-        if params.lifecyclesetup:
-            return self.process_lifecycle_results(results, params)
-        return self.process_non_lifecycle_results(results, params)
-
-    def process_lifecycle_results(self, results: list[ENSingleSimResults], params: ENParams) -> ENLifecycleResultsSummary:
+    def process_sims_results(self, results: list[ENSingleSimResults], params: ENParams) -> ENLifecycleResultsSummary:
         # In the following, "is not None" is verbose but helps prevent a bug where "if x" would evaluate
         # to False when the value is 0 (for some parameters, 0 can be a legitimate result)
         sims_av_total_brier_penalty = str(
@@ -24,7 +19,7 @@ class OutputProcessor():
         sims_av_retired_brier_penalty = str(round(float(
             np.mean([res.av_retired_brier_penalty for res in results if res.av_retired_brier_penalty is not None])),
             3))
-        if params.skeptical_agents_setup:
+        if params.skeptic_n > 0:
             sims_av_non_skeptic_brier_ratio = str(
                 round(float(
                 np.mean([res.sim_non_skeptic_brier_ratio for res in results if res.sim_non_skeptic_brier_ratio is not None])),
@@ -45,59 +40,6 @@ class OutputProcessor():
             sims_av_prop_retired_confident=av_prop_retired_confident,
             sims_av_non_skeptic_brier_ratio=sims_av_non_skeptic_brier_ratio
         )
-
-    def process_non_lifecycle_results(self, results: list[ENSingleSimResults], params: ENParams) -> ENResultsSummary:
-        cons_sims = [res for res in results if res.consensus_round is not None]
-        polarized_sims = [res for res in results if res.stable_pol_round is not None]
-        abandon_sims = [res for res in results if res.research_abandoned_round is not None]
-        unstable_sims = [res for res in results if res.unstable_conclusion_round is not None]
-
-        cons_count = len(cons_sims)
-        polarized_count = len(polarized_sims)
-        abandoned_count = len(abandon_sims)
-        unstable_count = str(len(unstable_sims))
-
-        prop_cons = str(round(cons_count / len(results), 3))
-        prop_pol = str(round(polarized_count / len(results), 3))
-        prop_aband = str(round(abandoned_count / len(results), 3))
-
-        av_c_r = av_p_r = av_a_r = "N/A"
-        if cons_sims:
-            av_c_r = np.mean([res.consensus_round for res in cons_sims if res.consensus_round is not None])
-            av_c_r = str(round(float(av_c_r), 3))
-        if polarized_sims:
-            av_p_r = np.mean(
-                [res.stable_pol_round for res in polarized_sims if res.stable_pol_round is not None])
-            av_p_r = str(round(float(av_p_r), 3))
-        if abandon_sims:
-            av_a_r = np.mean(
-                [res.research_abandoned_round for res in abandon_sims if res.research_abandoned_round is not None])
-            av_a_r = str(round(float(av_a_r), 3))
-        props_confident = [
-            res.prop_agents_confident_in_true_view
-            for res in results if res.prop_agents_confident_in_true_view is not None
-            ]
-        sims_av_prop_confident_in_true_view = str(round(float(np.mean(props_confident)), 3))
-        sims_sd_av_prop_agents_confident = str(round(stdev(props_confident), 3))
-        sims_av_total_brier_penalty = str(
-            round(float(np.mean([res.sim_brier_penalty_total for res in results])), 3))
-        brier_penalty_ratios = [res.sim_brier_penalty_ratio for res in results]
-        sims_av_brier_ratio = str(
-            round(float(np.mean(brier_penalty_ratios)), 3))
-        sims_sd_av_brier_ratio = str(round(stdev(brier_penalty_ratios), 3))
-        return ENResultsSummary(
-            sims_proportion_consensus_reached=prop_cons,
-            sims_av_consensus_round=av_c_r,
-            sims_proportion_polarization=prop_pol,
-            sims_av_polarization_round=av_p_r,
-            sims_proportion_research_abandoned=prop_aband,
-            sims_av_research_abandonment_round=av_a_r,
-            sims_av_prop_agents_confident_in_true_view=sims_av_prop_confident_in_true_view,
-            sims_sd_av_prop_agents_confident=sims_sd_av_prop_agents_confident,
-            sims_unstable_count=unstable_count,
-            sims_av_total_brier_penalty=sims_av_total_brier_penalty,
-            sims_av_brier_ratio=sims_av_brier_ratio,
-            sims_sd_av_brier_ratio=sims_sd_av_brier_ratio)
     
     def record_sim(self, results: ENResultsCSVWritableSummary, path: str):
         file_exists = os.path.isfile(path)

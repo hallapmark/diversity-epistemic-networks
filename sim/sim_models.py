@@ -4,17 +4,6 @@ from enum import Enum, auto
 from sim.priors_func import *
 
 ## SETUP
-class ENetworkType(Enum):
-   # The shape of the network (see Zollman 2007)
-   COMPLETE = auto()
-   CYCLE = auto()
-
-class SkepticalAgentsSetup(NamedTuple):
-    n_skeptical: int = 1
-    # Add n skeptical agents
-    min_cr: float = .5
-    max_cr: float = .5
-
 class LifeCycleSetup(NamedTuple):
     rounds_to_new_agent: int
     # A new agent will appear and an existing agent will retire every x rounds
@@ -24,24 +13,19 @@ class LifeCycleSetup(NamedTuple):
 
 class ENParams(NamedTuple):
     scientist_init_popcount: int
-    network_type: ENetworkType # Controls connectedness of network
     n_per_round: int # How many experiments, or 'coin flips', per round an agent will conduct
     epsilon: float # How much better theory B is in fact. pB = 0.5 + epsilon. pA = 0.5
     max_research_rounds: int # When we terminate the simulation, if it has not already stopped
-    stable_confidence_threshold: Optional[float]
-    # For simulations where we presume a stable outcome, what level of confidence is required
-    # of all agents before we conclude that the network has converged on the true view
     m: float
+    lifecyclesetup: LifeCycleSetup
     # m: how distrustful agents are of others' evidence (larger m means more distrustful)
     # See O'Connor and Weatherall 2018, Scientific Polarization
     priors_func: Priors_Func = uniform_priors
     # Controls priors distribution for the initial network
     priorsetup: PriorSetup = PriorSetup()
     # Additional settings for the prior distribution that get passed to the priors func
-    lifecyclesetup: Optional[LifeCycleSetup] = None
     # Setup for lifecycle networks with admissions and retirings
-    skeptical_agents_setup: Optional[SkepticalAgentsSetup] = None
-    # Setup for networks with skeptics
+    skeptic_n: int = 0
 
 ## RESULTS
 class ENSingleSimResults(NamedTuple):
@@ -74,26 +58,6 @@ class ENSingleSimResults(NamedTuple):
     # A snapshot identifying the proportion of all retired agents who retired confident 
     # in the true view.
 
-    prop_agents_confident_in_true_view: Optional[float] = None
-    # Only measured for non-lifecycle sims. And this will only really have an informative
-    # value for stable polarization outcomes.
-    # If we had a stable consensus outcome, everyone holds the true view confidently.
-    # If research was abandoned, then nobody holds the true view.
-    # In lifecycle sims, it is not clear what we would be measuring with this. It would
-    # be a snapshot, but the result would depend on exactly when the snapshot was taken
-    # – e.g. we might get a different result depending on whether it was just before
-    # or after a new agent was introduced
-
-    ## TYPE OF AND ROUND OF CONCLUSION
-    ## The following three are for non-lifecycle sims only
-    consensus_round: Optional[int] = None
-    research_abandoned_round: Optional[int] = None
-    # Zollman 2007 always exits sim in one of these two ways in practice
-
-    stable_pol_round: Optional[int] = None
-    # O'Connor and Weatherall 2018, Scientific Polarization,
-    # can additionally exit sim via stable polarization
-
     unstable_conclusion_round: Optional[int] = None
     # Stable here means irrevocably polarized, research abandonment or
     # consensus on truth.
@@ -107,33 +71,6 @@ class ENSingleSimResults(NamedTuple):
     # How many agents were in the network over all time (how many were touched
     # by the network). Only tracked for lifecycle sims
     # For stable sims, this would be equal to the initial population
-    
-class ENResultsSummary(NamedTuple):
-    ## METRICS FOR NON-LIFECYCLE SIMS
-    # Results taken as the mean value from all sim runs unless otherwise noted
-
-    sims_proportion_consensus_reached: str
-    sims_av_consensus_round: str
-    sims_proportion_polarization: str
-    sims_av_polarization_round: str
-    sims_proportion_research_abandoned: str
-    sims_av_research_abandonment_round: str
-    sims_av_prop_agents_confident_in_true_view: str
-    sims_sd_av_prop_agents_confident: str
-    sims_unstable_count: str
-    # Stable here means we have reached irrevocable
-    # consensus on truth, research abandonment or polarization.
-    # Theoretically, Zollman 2007, as well as O'Connor and Weatherall 2018
-    # can end as an unstable sim. It is just extremely unlikely to happen
-    # if there are enough rounds of play. Just in case, this tracks the
-    # number of unstable sims.
-    # Lifecycle sims are always unstable in the sense described above.
-    # Which is not to say that they will not have stable cyclical patterns
-    # emerge
-
-    sims_av_total_brier_penalty: str # Av total penalty from all agents over all rounds
-    sims_av_brier_ratio: str # Av ratio of obtained total penalty to obtainable penalty
-    sims_sd_av_brier_ratio: str # Standard deviation
 
 class ENLifecycleResultsSummary(NamedTuple):
     ## METRICS FOR LIFECYCLE SIMS
@@ -153,7 +90,7 @@ class ENLifecycleResultsSummary(NamedTuple):
     
 class ENSimsSummary(NamedTuple):
     params: ENParams
-    results_summary: ENResultsSummary | ENLifecycleResultsSummary
+    results_summary: ENLifecycleResultsSummary
     # In the output csv, we record both the initial params
     # the sims were run with and the results
 
