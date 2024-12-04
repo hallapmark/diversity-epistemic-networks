@@ -11,14 +11,7 @@ class ENetwork():
         self.params = params
         priors = params.priors_func(params.scientist_init_popcount, rng)
         self._rounds_played = 0
-        self.scientists = [Scientist(
-            rng,
-            params.n_per_round,
-            params.epsilon,
-            prior,
-            params.m,
-            False
-            ) for prior in priors]
+        self.scientists = [Scientist(prior, params, rng, False) for prior in priors]
         if not len(self.scientists) == params.scientist_init_popcount:
             raise ValueError(
                 "Something went wrong. !(len(self.scientists) == scientist_popcount)")
@@ -26,12 +19,7 @@ class ENetwork():
             prior = .5
             non_skeptics = [s for s in self.scientists if not s.is_skeptic]
             skeptic_to_become: Scientist = np.random.choice(non_skeptics)
-            skeptic_to_become.__init__(rng,
-                                       params.n_per_round,
-                                       params.epsilon,
-                                       prior,
-                                       params.m,
-                                       True)
+            skeptic_to_become.__init__(prior, params, rng, True)
         for s in self.scientists:
             # We assume that the network we start off with has some experience
             s.rounds_of_experience = 20 
@@ -88,7 +76,7 @@ class ENetwork():
             prior = params.lifecyclesetup.admissions_priors_func(1, self.rng)[0]
         # re-initialize retiree to new agent
         self.retiree_credences.append(retiree.credence)
-        retiree.__init__(self.rng, params.n_per_round, params.epsilon, prior, params.m, retiree.is_skeptic)
+        retiree.__init__(prior, params, self.rng, retiree.is_skeptic)
         self._structure_scientific_network(self.scientists)
         # Idea for future:
         # Conversion from incentive structure

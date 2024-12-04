@@ -3,30 +3,29 @@ import numpy as np
 from sim.experimentgen import BinomialExperiment, ExperimentGen
 from typing import Optional
 
+from sim.sim_models import ENParams
+
 LOW_STOP = .5
 
 """ A scientist who runs experiments on a binomial distribution, and who stops 
 experimenting when credence is below a certain threshold."""
 class Scientist(): 
-    def __init__(self, 
-                 rng: np.random.Generator, 
-                 n_per_round: int, 
-                 epsilon: float, 
+    def __init__(self,
                  prior: float,
-                 m: float,
-                 is_skeptic: bool):
-        self.n_per_round = n_per_round
+                 params: ENParams,
+                 rng: np.random.Generator,
+                 is_skeptic: bool,
+                 ):
+        self.credence = prior
+        self.params = params
+        self.is_skeptic = is_skeptic
+
         self.binomial_experiment_gen = ExperimentGen(rng)
         self.round_binomial_experiment: Optional[BinomialExperiment] = None
         self.rounds_of_experience = 0
-        self.is_skeptic = is_skeptic
-
-        self.credence = prior
-        self.epsilon = epsilon # How much better theory B is. p = 0.5 + epsilon
-        # Influencers can include self
-        self.m = m
-
+        
         self.influencers: list[Scientist] = []
+        # Influencers can include self
     
     def __str__(self):
         k = self.round_binomial_experiment.k if self.round_binomial_experiment else 'N/A'
@@ -41,7 +40,7 @@ class Scientist():
         if self.credence < LOW_STOP:
             self.round_binomial_experiment = None
         else:
-            self._experiment(self.n_per_round, self.epsilon)
+            self._experiment(self.params.n_per_round, self.params.epsilon)
 
     def add_jeffrey_influencer(self, influencer: Scientist):
         self.influencers.append(influencer)
@@ -54,7 +53,7 @@ class Scientist():
 
     def dm(self, influencer: Scientist) -> float:
         d = abs(self.credence - influencer.credence)
-        return d * self.m
+        return d * self.params.m
 
     # Private methods   
     def _experiment(self, n: int, epsilon):
@@ -65,7 +64,7 @@ class Scientist():
         if exp:
             k = exp.k
             n = exp.n
-            p = 0.5 + self.epsilon
+            p = 0.5 + self.params.epsilon
             p_E_H = self._truncated_likelihood(k, n, p)
             p_E_nH = self._truncated_p_E_nH(k, n, p)
             p_E = self._marginal_likelihood(self.credence, p_E_H, p_E_nH)

@@ -33,7 +33,7 @@ class ENSimSetup():
                     confident_priors
                     )   for pop in (10, 20, 50,) # 10, 20, 50)
                         for e in (0.01, 0.05, 0.1,) # 0.01, 0.05, 0.1
-                        for m in (1.1, 1.5, 2, 2.5, 3) # 0, 1, 1.1, 1.5, 2, 2.5, 3
+                        for m in (0, 1, 1.1, 1.5, 2, 2.5, 3) # 0, 1, 1.1, 1.5, 2, 2.5, 3
                         for n in (5,)
                         for rounds in (1000,)
                         for rounds_to_new_agent in (10,)]
