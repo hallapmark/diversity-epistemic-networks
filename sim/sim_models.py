@@ -18,10 +18,15 @@ class ENParams(NamedTuple):
     max_research_rounds: int # When we terminate the simulation, if it has not already stopped
     m: float # how distrustful agents are of others' evidence (larger m means more distrustful)
     # See O'Connor and Weatherall 2018, Scientific Polarization
+
     lifecyclesetup: LifeCycleSetup
     priors_func: Priors_Func
     # Controls priors distribution for the initial network
+
     skeptic_n: int = 0
+    skeptic_alternates: bool = False 
+    # If True, any agents with .5 credence such as the skeptic will take action A 50% of the time 
+    # and action B 50% of the time. If false, agents with .5 credence will always take action B.
 
 ## RESULTS
 class ENSingleSimResults(NamedTuple):

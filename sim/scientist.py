@@ -39,6 +39,12 @@ class Scientist():
     def decide_round_research_action(self):
         if self.credence < LOW_STOP:
             self.round_binomial_experiment = None
+        elif self.params.skeptic_alternates and self.credence == .5:
+            try_B: bool = np.random.choice([True, False])
+            if try_B:
+                self._experiment(self.params.n_per_round, self.params.epsilon)
+            else:
+                self.round_binomial_experiment = None
         else:
             self._experiment(self.params.n_per_round, self.params.epsilon)
 

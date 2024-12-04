@@ -11,6 +11,7 @@ from enum import Enum, auto
 class ENSimType(Enum):
     LIFECYCLE = auto()
     LIFECYCLE_W_SKEPTICS = auto()
+    LIFECYCLE_W_ALTERNATOR_SKEPTICS = auto()
 
 class ENSimSetup():
     def __init__(self,
@@ -51,6 +52,19 @@ class ENSimSetup():
                         for rounds in (1000,)
                         for rounds_to_new_agent in (10,)]
                 self.run_configs(configs, "lifecycle_w_skep_effect_of_m_1000r.csv")
+            case ENSimType.LIFECYCLE_W_ALTERNATOR_SKEPTICS:
+                configs = [ENParams(
+                    pop, n, e, rounds, m, 
+                    LifeCycleSetup(rounds_to_new_agent, uniform_priors),
+                    confident_priors, 
+                    1, True
+                    )   for pop in (10,)
+                        for e in (0.05,)
+                        for m in (0, 1, 1.1, 1.5, 2, 2.5, 3)
+                        for n in (5,)
+                        for rounds in (1000,)
+                        for rounds_to_new_agent in (10,)]
+                self.run_configs(configs, "lifecycle_w_alt_skep_effect_of_m_1000r.csv")
     def run_configs(self, configs: List[ENParams], output_filename: str):
         # We need to be careful when passing rng instances to starmap. If we do not set independent seeds, 
         # we will get the *same* binomial experiments each simulation since the subprocesses share the
