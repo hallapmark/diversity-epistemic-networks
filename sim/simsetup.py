@@ -8,6 +8,10 @@ from sim.sim_models import *
 from typing import Optional, List
 from enum import Enum, auto
 
+LIFECYCLE_FILENAME = "24478d4_lifecycle_effect_of_m_1000r.csv"
+LIFECYCLE_W_SKEPTICS_FILENAME = "24478d4_lifecycle_w_skep_effect_of_m_1000r.csv"
+LIFECYCLE_W_ALTERNATOR_SKEPTICS_FILENAME = "24478d4_lifecycle_w_alt_skep_effect_of_m_1000r.csv"
+
 class ENSimType(Enum):
     LIFECYCLE = auto()
     LIFECYCLE_W_SKEPTICS = auto()
@@ -22,7 +26,7 @@ class ENSimSetup():
         self.output_processor = OutputProcessor()
     
     def quick_setup(self):
-        """ Setup sims from pre-defined templates, e.g. ENSimType.ZOLLMAN_COMPLETE. 
+        """ Setup sims from pre-defined templates, e.g. ENSimType.LIFECYCLE. 
         Use func run_configs instead if you need to customize the parameters."""
         if not self.sim_type:
             raise ValueError("Quick setup can only be called if you have specified ENSimType")
@@ -32,39 +36,40 @@ class ENSimSetup():
                     pop, n, e, rounds, m, 
                     LifeCycleSetup(rounds_to_new_agent, uniform_priors), 
                     confident_priors
-                    )   for pop in (10, 20, 50,) # 10, 20, 50)
+                    )   for pop in (10, 20, 50,) # 10, 20, 50
                         for e in (0.01, 0.05, 0.1,) # 0.01, 0.05, 0.1
                         for m in (0, 1, 1.1, 1.5, 2, 2.5, 3) # 0, 1, 1.1, 1.5, 2, 2.5, 3
                         for n in (5,)
                         for rounds in (1000,)
                         for rounds_to_new_agent in (10,)]
-                self.run_configs(configs, "lifecycle_effect_of_m_1000r.csv")
+                self.run_configs(configs, LIFECYCLE_FILENAME)
             case ENSimType.LIFECYCLE_W_SKEPTICS:
                 configs = [ENParams(
                     pop, n, e, rounds, m, 
                     LifeCycleSetup(rounds_to_new_agent, uniform_priors),
                     confident_priors, 
                     1
-                    )   for pop in (10,)
-                        for e in (0.05,)
+                    )   for pop in (10, 20, 50,)
+                        for e in (0.01, 0.05, 0.1,)
                         for m in (0, 1, 1.1, 1.5, 2, 2.5, 3)
                         for n in (5,)
                         for rounds in (1000,)
                         for rounds_to_new_agent in (10,)]
-                self.run_configs(configs, "lifecycle_w_skep_effect_of_m_1000r.csv")
+                self.run_configs(configs, LIFECYCLE_W_SKEPTICS_FILENAME)
             case ENSimType.LIFECYCLE_W_ALTERNATOR_SKEPTICS:
                 configs = [ENParams(
                     pop, n, e, rounds, m, 
                     LifeCycleSetup(rounds_to_new_agent, uniform_priors),
                     confident_priors, 
                     1, True
-                    )   for pop in (10,)
-                        for e in (0.05,)
+                    )   for pop in (10, 20, 50,)
+                        for e in (0.01, 0.05, 0.1,)
                         for m in (0, 1, 1.1, 1.5, 2, 2.5, 3)
                         for n in (5,)
                         for rounds in (1000,)
                         for rounds_to_new_agent in (10,)]
-                self.run_configs(configs, "lifecycle_w_alt_skep_effect_of_m_1000r.csv")
+                self.run_configs(configs, LIFECYCLE_W_ALTERNATOR_SKEPTICS_FILENAME)
+
     def run_configs(self, configs: List[ENParams], output_filename: str):
         # We need to be careful when passing rng instances to starmap. If we do not set independent seeds, 
         # we will get the *same* binomial experiments each simulation since the subprocesses share the

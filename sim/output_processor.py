@@ -7,7 +7,7 @@ from sim.sim_models import *
 
 
 class OutputProcessor():
-    def process_sims_results(self, results: list[ENSingleSimResults], params: ENParams) -> ENLifecycleResultsSummary:
+    def process_sims_results(self, results: list[ENSingleSimResults], params: ENParams) -> ENLifecycleAnalyzedResults:
         # In the following, "is not None" is verbose but helps prevent a bug where "if x" would evaluate
         # to False when the value is 0 (for some parameters, 0 can be a legitimate result)
         sims_av_total_brier_penalty = str(
@@ -31,7 +31,7 @@ class OutputProcessor():
             3))
         av_n_all_agents = str(round(float(np.mean(
             [res.n_all_agents for res in results if res.n_all_agents is not None])), 3))
-        return ENLifecycleResultsSummary(
+        return ENLifecycleAnalyzedResults(
             sims_av_n_all_agents=av_n_all_agents,
             sims_av_total_brier_penalty=sims_av_total_brier_penalty,
             sims_av_brier_ratio=sims_av_brier_ratio,

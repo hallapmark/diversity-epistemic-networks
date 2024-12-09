@@ -73,7 +73,7 @@ class ENSingleSimResults(NamedTuple):
     # by the network). Only tracked for lifecycle sims
     # For stable sims, this would be equal to the initial population
 
-class ENLifecycleResultsSummary(NamedTuple):
+class ENLifecycleAnalyzedResults(NamedTuple):
     ## METRICS FOR LIFECYCLE SIMS
     # Results taken as the mean value from all sim runs
 
@@ -91,7 +91,7 @@ class ENLifecycleResultsSummary(NamedTuple):
     
 class ENSimsSummary(NamedTuple):
     params: ENParams
-    results_summary: ENLifecycleResultsSummary
+    results_summary: ENLifecycleAnalyzedResults
     # In the output csv, we record both the initial params
     # the sims were run with and the results
 
