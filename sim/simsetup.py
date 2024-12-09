@@ -1,6 +1,6 @@
 import numpy as np
 import timeit
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from sim.network import *
 from sim.output_processor import OutputProcessor
 from sim.sim import *
@@ -86,7 +86,7 @@ class ENSimSetup():
     def run_sims_for_param_config(self, params: ENParams, rng_streams: List[np.random.Generator]) -> ENSimsSummary:
         if not rng_streams:
             raise ValueError("There needs to be at least one rng.")
-        pool = Pool()
+        pool = Pool(processes=max(cpu_count() - 1, 1))
         results_from_sims = pool.starmap(self.run_sim,
                                         [(rng, params) for rng in rng_streams])
         pool.close()
