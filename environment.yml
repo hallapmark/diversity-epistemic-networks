@@ -2,3 +2,4 @@ name: epistemic-networks
 dependencies:
     - python ==3.12
     - numpy
+    - pandas
