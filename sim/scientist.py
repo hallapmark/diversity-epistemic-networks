@@ -15,10 +15,16 @@ class Scientist():
                  params: ENParams,
                  rng: np.random.Generator,
                  is_skeptic: bool,
+                 is_propagandist: bool = False
                  ):
+        if is_skeptic and is_propagandist:
+            raise ValueError("A scientist cannot be both a skeptic and a propagandist")
         self.credence = prior
         self.params = params
         self.is_skeptic = is_skeptic
+        self.is_propagandist = is_propagandist 
+        # Only publishes results that favor the theory 'A is better'
+        # Does not actually conduct fraudulent experiments
 
         self.binomial_experiment_gen = ExperimentGen(rng)
         self.round_binomial_experiment: Optional[BinomialExperiment] = None
@@ -34,9 +40,18 @@ class Scientist():
     
     # Public interface
     def report_experiment_data(self) -> Optional[BinomialExperiment]:
-        return self.round_binomial_experiment
+        rbe = self.round_binomial_experiment
+        if self.is_propagandist:
+            return rbe if rbe and rbe.k / rbe.n < .5 else None 
+            # only report if it looks bad for theory B
+        return rbe
     
     def decide_round_research_action(self):
+        if self.is_propagandist:
+            self._experiment(self.params.n_per_round, self.params.epsilon)
+            return # Early exit if is propagandist. Propagandist always experiments
+        
+        # All other agents decide based on their credence, with the constraints listed below
         if self.credence < LOW_STOP:
             self.round_binomial_experiment = None
         elif self.params.skeptic_alternates and self.credence == .5:
@@ -52,7 +67,7 @@ class Scientist():
         self.influencers.append(influencer)
 
     def jeffrey_update_credence(self):
-        if self.is_skeptic:
+        if self.is_skeptic or self.is_propagandist:
             return
         for influencer in self.influencers:
             self._jeffrey_update_credence_on_influencer(influencer)

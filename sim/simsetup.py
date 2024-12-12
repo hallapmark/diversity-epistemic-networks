@@ -8,14 +8,22 @@ from sim.sim_models import *
 from typing import Optional, List
 from enum import Enum, auto
 
-LIFECYCLE_FILENAME = "24478d4_lifecycle_effect_of_m_1000r.csv"
-LIFECYCLE_W_SKEPTICS_FILENAME = "24478d4_lifecycle_w_skep_effect_of_m_1000r.csv"
-LIFECYCLE_W_ALTERNATOR_SKEPTICS_FILENAME = "24478d4_lifecycle_w_alt_skep_effect_of_m_1000r.csv"
+LIFECYCLE_FILENAME = "lifecycle_effect_of_m_1000r.csv"
+LIFECYCLE_W_SKEPTICS_FILENAME = "lifecycle_w_skep_effect_of_m_1000r.csv"
+LIFECYCLE_W_ALTERNATOR_SKEPTICS_FILENAME = "lifecycle_w_alt_skep_effect_of_m_1000r.csv"
+LIFECYCLE_W_PROPAGANDIST_FILENAME = "lifecycle_w_propagandist_effect_of_m_1000r.csv"
+LIFECYCLE_W_PROPAGANDIST_N_SKEPTIC_FILENAME = "lifecycle_w_propagandist_n_skeptic_effect_of_m_1000r.csv"
+
+pop_VALS = (10, 20, 50)
+e_VALS = (0.01, 0.05, 0.1)
+m_VALS = (0, 1, 1.1, 1.5, 2, 2.5, 3)
 
 class ENSimType(Enum):
     LIFECYCLE = auto()
-    LIFECYCLE_W_SKEPTICS = auto()
-    LIFECYCLE_W_ALTERNATOR_SKEPTICS = auto()
+    LIFECYCLE_W_SKEPTIC = auto()
+    LIFECYCLE_W_ALTERNATOR_SKEPTIC = auto()
+    LIFECYCLE_W_PROPAGANDIST = auto()
+    LIFECYCLE_W_PROPAGANDIST_N_SKEPTIC = auto()
 
 class ENSimSetup():
     def __init__(self,
@@ -36,39 +44,65 @@ class ENSimSetup():
                     pop, n, e, rounds, m, 
                     LifeCycleSetup(rounds_to_new_agent, uniform_priors), 
                     confident_priors
-                    )   for pop in (10, 20, 50,) # 10, 20, 50
-                        for e in (0.01, 0.05, 0.1,) # 0.01, 0.05, 0.1
-                        for m in (0, 1, 1.1, 1.5, 2, 2.5, 3) # 0, 1, 1.1, 1.5, 2, 2.5, 3
+                    )   for pop in (pop_VALS) # 10, 20, 50
+                        for e in (e_VALS) # 0.01, 0.05, 0.1
+                        for m in (m_VALS) # 0, 1, 1.1, 1.5, 2, 2.5, 3
                         for n in (5,)
                         for rounds in (1000,)
                         for rounds_to_new_agent in (10,)]
                 self.run_configs(configs, LIFECYCLE_FILENAME)
-            case ENSimType.LIFECYCLE_W_SKEPTICS:
+            case ENSimType.LIFECYCLE_W_SKEPTIC:
                 configs = [ENParams(
                     pop, n, e, rounds, m, 
                     LifeCycleSetup(rounds_to_new_agent, uniform_priors),
                     confident_priors, 
                     1
-                    )   for pop in (10, 20, 50,)
-                        for e in (0.01, 0.05, 0.1,)
-                        for m in (0, 1, 1.1, 1.5, 2, 2.5, 3)
+                    )   for pop in (pop_VALS)
+                        for e in (e_VALS)
+                        for m in (m_VALS)
                         for n in (5,)
                         for rounds in (1000,)
                         for rounds_to_new_agent in (10,)]
                 self.run_configs(configs, LIFECYCLE_W_SKEPTICS_FILENAME)
-            case ENSimType.LIFECYCLE_W_ALTERNATOR_SKEPTICS:
+            case ENSimType.LIFECYCLE_W_ALTERNATOR_SKEPTIC:
                 configs = [ENParams(
                     pop, n, e, rounds, m, 
                     LifeCycleSetup(rounds_to_new_agent, uniform_priors),
                     confident_priors, 
                     1, True
-                    )   for pop in (10, 20, 50,)
-                        for e in (0.01, 0.05, 0.1,)
-                        for m in (0, 1, 1.1, 1.5, 2, 2.5, 3)
+                    )   for pop in (pop_VALS)
+                        for e in (e_VALS)
+                        for m in (m_VALS)
                         for n in (5,)
                         for rounds in (1000,)
                         for rounds_to_new_agent in (10,)]
                 self.run_configs(configs, LIFECYCLE_W_ALTERNATOR_SKEPTICS_FILENAME)
+            case ENSimType.LIFECYCLE_W_PROPAGANDIST:
+                configs = [ENParams(
+                    pop, n, e, rounds, m, 
+                    LifeCycleSetup(rounds_to_new_agent, uniform_priors),
+                    confident_priors, 
+                    0, False, True
+                    )   for pop in (20,)
+                        for e in (e_VALS)
+                        for m in (m_VALS)
+                        for n in (5,)
+                        for rounds in (1000,)
+                        for rounds_to_new_agent in (10,)]
+                self.run_configs(configs, LIFECYCLE_W_PROPAGANDIST_FILENAME)
+            case ENSimType.LIFECYCLE_W_PROPAGANDIST_N_SKEPTIC:
+                configs = [ENParams(
+                    pop, n, e, rounds, m, 
+                    LifeCycleSetup(rounds_to_new_agent, uniform_priors),
+                    confident_priors, 
+                    1, False, True
+                    )   for pop in (20,)
+                        for e in (e_VALS)
+                        for m in (m_VALS)
+                        for n in (5,)
+                        for rounds in (1000,)
+                        for rounds_to_new_agent in (10,)]
+                self.run_configs(configs, LIFECYCLE_W_PROPAGANDIST_N_SKEPTIC_FILENAME)
 
     def run_configs(self, configs: List[ENParams], output_filename: str):
         # We need to be careful when passing rng instances to starmap. If we do not set independent seeds, 

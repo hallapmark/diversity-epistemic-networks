@@ -15,11 +15,20 @@ class ENetwork():
         if not len(self.scientists) == params.scientist_init_popcount:
             raise ValueError(
                 "Something went wrong. !(len(self.scientists) == scientist_popcount)")
+        
         for _ in range(params.skeptic_n):
             prior = .5
             non_skeptics = [s for s in self.scientists if not s.is_skeptic]
             skeptic_to_become: Scientist = np.random.choice(non_skeptics)
             skeptic_to_become.__init__(prior, params, rng, True)
+
+        if params.propagandist:
+            # We only ever add one propagandist. We do not replace a skeptic if one is present
+            prior = .5
+            non_skeptics = [s for s in self.scientists if not s.is_skeptic]
+            propagandist_to_be: Scientist = np.random.choice(non_skeptics)
+            propagandist_to_be.__init__(prior, params, rng, False, True)
+            
         for s in self.scientists:
             # We assume that the network we start off with has some experience
             s.rounds_of_experience = 20 
@@ -70,13 +79,13 @@ class ENetwork():
         retiree: Scientist = np.random.choice(experienced_scientists)
         if not retiree:
             raise ValueError("We should not reach this. No retiree agent found.")
-        if retiree.is_skeptic:
+        if retiree.is_skeptic or retiree.is_propagandist:
             prior = .5
         else:
             prior = params.lifecyclesetup.admissions_priors_func(1, self.rng)[0]
         # re-initialize retiree to new agent
         self.retiree_credences.append(retiree.credence)
-        retiree.__init__(prior, params, self.rng, retiree.is_skeptic)
+        retiree.__init__(prior, params, self.rng, retiree.is_skeptic, retiree.is_propagandist)
         self._structure_scientific_network(self.scientists)
         # Idea for future:
         # Conversion from incentive structure

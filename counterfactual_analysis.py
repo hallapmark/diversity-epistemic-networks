@@ -1,5 +1,5 @@
 import pandas as pd
-from sim.simsetup import LIFECYCLE_FILENAME, LIFECYCLE_W_ALTERNATOR_SKEPTICS_FILENAME, LIFECYCLE_W_SKEPTICS_FILENAME
+from sim.simsetup import *
 
 # Define constants for column names
 SKEPTIC_BRIER_ADVANTAGE_KEY = 'skeptic_brier_advantage'
@@ -98,3 +98,10 @@ if __name__ == '__main__':
     df3 = pd.read_csv(df3_name)
     ca.analyze_credence_spiking_vs_didactic(df1, df2, df2_name)
     ca.analyze_credence_spiking_vs_didactic(df1, df3, df3_name)
+
+    # Propagandist and centrist
+    df4_name = LIFECYCLE_W_PROPAGANDIST_FILENAME
+    df5_name = LIFECYCLE_W_PROPAGANDIST_N_SKEPTIC_FILENAME
+    df4 = pd.read_csv(df4_name)
+    df5 = pd.read_csv(df5_name)
+    ca.analyze_credence_spiking_vs_didactic(df4, df5, df5_name) 

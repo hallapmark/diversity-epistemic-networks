@@ -28,6 +28,9 @@ class ENParams(NamedTuple):
     # If True, any agents with .5 credence such as the skeptic will take action A 50% of the time 
     # and action B 50% of the time. If false, agents with .5 credence will always take action B.
 
+    propagandist: bool = False
+    # If True, replace one non-skeptic scientist in the network with a Propagandist
+
 ## RESULTS
 class ENSingleSimResults(NamedTuple):
     ## SCORING
