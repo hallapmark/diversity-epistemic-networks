@@ -12,27 +12,27 @@ def main():
     sim_type = ENSimType.LIFECYCLE
     simsetup = ENSimSetup(sim_count, sim_type)
     simsetup.quick_setup()
-    print("-------------\nBaseline lifecycle: DONE.\n-------------")
+    print("\n-------------\nBaseline lifecycle: DONE.\n-------------\n")
 
     sim_type = ENSimType.LIFECYCLE_W_SKEPTIC
     simsetup = ENSimSetup(sim_count, sim_type)
     simsetup.quick_setup()
-    print("-------------\nLifecycle with skeptic: DONE.\n-------------")
+    print("\n-------------\nLifecycle with skeptic: DONE.\n-------------\n")
 
     sim_type = ENSimType.LIFECYCLE_W_ALTERNATOR_SKEPTIC
     simsetup = ENSimSetup(sim_count, sim_type)
     simsetup.quick_setup()
-    print("-------------\nLifecycle with alternator skeptic: DONE.\n-------------")
+    print("\n-------------\nLifecycle with alternator skeptic: DONE.\n-------------\n")
 
     sim_type = ENSimType.LIFECYCLE_W_PROPAGANDIST
     simsetup = ENSimSetup(sim_count, sim_type)
     simsetup.quick_setup()
-    print("-------------\nLifecycle with propagandist: DONE.\n-------------")
+    print("\n-------------\nLifecycle with propagandist: DONE.\n-------------\n")
 
     sim_type = ENSimType.LIFECYCLE_W_PROPAGANDIST_N_SKEPTIC
     simsetup = ENSimSetup(sim_count, sim_type)
     simsetup.quick_setup()
-    print("-------------\nLifecycle with propagandist and skeptic: DONE.\n-------------")
+    print("\n-------------\nLifecycle with propagandist and skeptic: DONE.\n-------------\n")
 
 if __name__ == "__main__":
     freeze_support()

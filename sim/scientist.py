@@ -48,20 +48,20 @@ class Scientist():
     
     def decide_round_research_action(self):
         if self.is_propagandist:
-            self._experiment(self.params.n_per_round, self.params.epsilon)
+            self._experiment(self.params.trials, self.params.epsilon)
             return # Early exit if is propagandist. Propagandist always experiments
         
         # All other agents decide based on their credence, with the constraints listed below
         if self.credence < LOW_STOP:
             self.round_binomial_experiment = None
-        elif self.params.skeptic_alternates and self.credence == .5:
+        elif self.params.alternator and self.credence == .5:
             try_B: bool = np.random.choice([True, False])
             if try_B:
-                self._experiment(self.params.n_per_round, self.params.epsilon)
+                self._experiment(self.params.trials, self.params.epsilon)
             else:
                 self.round_binomial_experiment = None
         else:
-            self._experiment(self.params.n_per_round, self.params.epsilon)
+            self._experiment(self.params.trials, self.params.epsilon)
 
     def add_jeffrey_influencer(self, influencer: Scientist):
         self.influencers.append(influencer)

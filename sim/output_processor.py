@@ -19,7 +19,7 @@ class OutputProcessor():
         sims_av_retired_brier_penalty = str(round(float(
             np.mean([res.av_retired_brier_penalty for res in results if res.av_retired_brier_penalty is not None])),
             3))
-        if params.skeptic_n > 0:
+        if params.skeptic_count > 0:
             sims_av_non_skeptic_brier_ratio = str(
                 round(float(
                 np.mean([res.sim_non_skeptic_brier_ratio for res in results if res.sim_non_skeptic_brier_ratio is not None])),
@@ -52,11 +52,11 @@ class OutputProcessor():
                 writer.writerow(results.headers)
             writer.writerow(results.sim_data)
 
-    def data_for_writing(self, 
-                        sims_summary: ENSimsSummary, 
-                        sim_count: int, 
-                        time_elapsed: float) -> ENResultsCSVWritableSummary:
-        headers = ['Sim count']
+    def data_for_writing(self,
+                         sims_summary: ENSimsSummary,
+                         sim_count: int,
+                         time_elapsed: float) -> ENResultsCSVWritableSummary:
+        headers = ['sim_count']
         headers.extend([param_name for param_name in sims_summary.params._asdict().keys()])
         headers.append('sim time (s)')
         summary_fields = [field for field in sims_summary.results_summary._asdict().keys()]

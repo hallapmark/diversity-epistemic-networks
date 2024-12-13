@@ -30,7 +30,7 @@ class CounterfactualAnalysis:
         # negative value means brier ratio would decrease (score improved).
 
         # Define the relevant parameters
-        relevant_params = ['Sim count', 'scientist_init_popcount', 'n_per_round', 'epsilon', 'max_research_rounds', 'm']
+        relevant_params = ['sim_count', 'pop_size', 'trials', 'epsilon', 'max_rounds', 'm']
 
         # Merge df1 and df2 on relevant parameters
         merged_df1_df2 = pd.merge(df1, df2, on=relevant_params, suffixes=(None, DF2_KEY))

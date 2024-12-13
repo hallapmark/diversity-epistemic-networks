@@ -15,11 +15,11 @@ class ENSimulation():
         self.metrics = SimMetrics()
     
     def run_sim(self):
-        for i in range(1, self.params.max_research_rounds + 1):
+        for i in range(1, self.params.max_rounds + 1):
             if self.results:
                 break
             self._sim_action(i)
-            if i == self.params.max_research_rounds:
+            if i == self.params.max_rounds:
                 self.results = self._lifecycle_results(i)
 
     def _sim_action(self, sim_round: int):
@@ -33,7 +33,7 @@ class ENSimulation():
         en = self.epistemic_network
         working = en.scientists
 
-        nsbr = self.metrics.non_skeptic_brier_ratio() if self.params.skeptic_n > 0 else None
+        nsbr = self.metrics.non_skeptic_brier_ratio() if self.params.skeptic_count > 0 else None
         av_retired_brier_penalty = self.metrics.mean_brier_score(en.retiree_credences)
         retired_confidently = self.metrics.prop_truth_confidently(en.retiree_credences)
         return ENSingleSimResults(

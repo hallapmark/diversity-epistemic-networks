@@ -9,14 +9,14 @@ class ENetwork():
                  params: ENParams):
         self.rng = rng
         self.params = params
-        priors = params.priors_func(params.scientist_init_popcount, rng)
+        priors = params.init_priors_func(params.pop_size, rng)
         self._rounds_played = 0
         self.scientists = [Scientist(prior, params, rng, False) for prior in priors]
-        if not len(self.scientists) == params.scientist_init_popcount:
+        if not len(self.scientists) == params.pop_size:
             raise ValueError(
                 "Something went wrong. !(len(self.scientists) == scientist_popcount)")
         
-        for _ in range(params.skeptic_n):
+        for _ in range(params.skeptic_count):
             prior = .5
             non_skeptics = [s for s in self.scientists if not s.is_skeptic]
             skeptic_to_become: Scientist = np.random.choice(non_skeptics)
@@ -65,9 +65,7 @@ class ENetwork():
 
     def _lifecycle_round_actions(self):
         """ Every x rounds, a scientist exits and a new one enters """
-        if not self.params.lifecyclesetup:
-            raise NotImplementedError("Lifecycle actions requested but lifecyclesetup missing from params.")
-        if not self._rounds_played % self.params.lifecyclesetup.rounds_to_new_agent == 0:
+        if not self._rounds_played % self.params.rounds_to_new_agent == 0:
             return
         
         # Do not retire if no experienced scientist is found
@@ -82,7 +80,7 @@ class ENetwork():
         if retiree.is_skeptic or retiree.is_propagandist:
             prior = .5
         else:
-            prior = params.lifecyclesetup.admissions_priors_func(1, self.rng)[0]
+            prior = params.admissions_priors_func(1, self.rng)[0]
         # re-initialize retiree to new agent
         self.retiree_credences.append(retiree.credence)
         retiree.__init__(prior, params, self.rng, retiree.is_skeptic, retiree.is_propagandist)

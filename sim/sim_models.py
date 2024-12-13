@@ -4,32 +4,31 @@ from enum import Enum, auto
 from sim.priors_func import *
 
 ## SETUP
-class LifeCycleSetup(NamedTuple):
-    rounds_to_new_agent: int
-    # A new agent will appear and an existing agent will retire every x rounds
-    admissions_priors_func: Priors_Func = uniform_priors
-    # This is the prior distribution for newly admitted agents
-    # The initial population is configured separately, see below
-
 class ENParams(NamedTuple):
-    scientist_init_popcount: int
-    n_per_round: int # How many experiments, or 'coin flips', per round an agent will conduct
+    pop_size: int # How many agents are in the network
     epsilon: float # How much better theory B is in fact. pB = 0.5 + epsilon. pA = 0.5
-    max_research_rounds: int # When we terminate the simulation, if it has not already stopped
     m: float # how distrustful agents are of others' evidence (larger m means more distrustful)
     # See O'Connor and Weatherall 2018, Scientific Polarization
 
-    lifecyclesetup: LifeCycleSetup
-    priors_func: Priors_Func
-    # Controls priors distribution for the initial network
-
-    skeptic_n: int = 0
-    skeptic_alternates: bool = False 
+    skeptic_count: int = 0
+    alternator: bool = False 
     # If True, any agents with .5 credence such as the skeptic will take action A 50% of the time 
     # and action B 50% of the time. If false, agents with .5 credence will always take action B.
 
     propagandist: bool = False
     # If True, replace one non-skeptic scientist in the network with a Propagandist
+
+    trials: int = 5 # How many experiments, or 'coin flips', per round an agent will conduct
+
+    max_rounds: int = 1000 # When we terminate the simulation
+    rounds_to_new_agent: int = 10 
+    # A new agent will appear and an existing agent will retire every x rounds
+
+    admissions_priors_func: Priors_Func = uniform_priors
+    # This is the prior distribution for newly admitted agents
+
+    init_priors_func: Priors_Func = confident_priors
+    # Controls priors distribution for the initial network
 
 ## RESULTS
 class ENSingleSimResults(NamedTuple):
